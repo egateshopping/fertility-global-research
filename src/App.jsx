@@ -10,7 +10,7 @@ import HomePage from './pages/HomePage'
 import { useLang } from './i18n.jsx'
 import './App.css'
 
-const ADMIN_EMAILS = ['admin@fertility-global.org']
+const ADMIN_EMAILS = ['egate.shopping@gmail.com']
 
 export default function App() {
   const { t, lang, toggle } = useLang()
@@ -27,7 +27,7 @@ export default function App() {
       const u = session?.user || null
       setUser(u)
       if (u) {
-        setIsAdmin(ADMIN_EMAILS.includes(u.email))
+        setIsAdmin(ADMIN_EMAILS.includes((u.email || "").toLowerCase()))
         fetchDoctorProfile(u.id)
       } else {
         setIsAdmin(false)
@@ -43,7 +43,7 @@ export default function App() {
     const u = session?.user || null
     setUser(u)
     if (u) {
-      setIsAdmin(ADMIN_EMAILS.includes(u.email))
+      setIsAdmin(ADMIN_EMAILS.includes((u.email || "").toLowerCase()))
       fetchDoctorProfile(u.id)
     }
     setLoading(false)

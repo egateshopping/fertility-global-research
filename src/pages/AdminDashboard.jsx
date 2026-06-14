@@ -1,310 +1,358 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase, generateInvitationNumber } from '../supabaseClient'
 import { generateInvitationPDF } from '../utils/pdfGenerator'
-import { generateInvitationNumber } from '../supabaseClient'
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
 
 export default function AdminDashboard() {
+  const [tab, setTab] = useState('overview')
   const [doctors, setDoctors] = useState([])
   const [conferences, setConferences] = useState([])
-  const [selectedDoctor, setSelectedDoctor] = useState(null)
-  const [selectedConference, setSelectedConference] = useState('')
-  const [travelDate, setTravelDate] = useState('')
   const [invitations, setInvitations] = useState([])
-  const [showNewConfForm, setShowNewConfForm] = useState(false)
-  const [newConf, setNewConf] = useState({
-    title: '',
-    location: '',
-    start_date: '',
-    end_date: '',
-    registration_deadline: ''
+
+  // doctor search/filter
+  const [search, setSearch] = useState('')
+  const [filterCountry, setFilterCountry] = useState('')
+  const [filterSpecialty, setFilterSpecialty] = useState('')
+
+  // modals
+  const [viewDoctor, setViewDoctor] = useState(null)
+  const [editDoctor, setEditDoctor] = useState(null)
+  const [docFiles, setDocFiles] = useState([])
+
+  // conference form
+  const [showConfForm, setShowConfForm] = useState(false)
+  const [newConf, setNewConf] = useState({ title: '', location: '', start_date: '', end_date: '', registration_deadline: '', description: '' })
+
+  // invitation builder (editable before issuing)
+  const [inv, setInv] = useState({ doctorId: '', conferenceId: '', travelDate: '', issueDate: new Date().toISOString().split('T')[0], number: '' })
+  const [invDoctorEdit, setInvDoctorEdit] = useState(null)
+
+  useEffect(() => { refreshAll() }, [])
+
+  const refreshAll = () => { fetchDoctors(); fetchConferences(); fetchInvitations() }
+  const fetchDoctors = async () => { const { data } = await supabase.from('doctors').select('*').order('created_at', { ascending: false }); setDoctors(data || []) }
+  const fetchConferences = async () => { const { data } = await supabase.from('conferences').select('*'); setConferences(data || []) }
+  const fetchInvitations = async () => { const { data } = await supabase.from('invitations').select('*').order('created_at', { ascending: false }); setInvitations(data || []) }
+
+  // ---------- filters ----------
+  const countries = [...new Set(doctors.map(d => d.nationality).filter(Boolean))]
+  const specialties = [...new Set(doctors.map(d => d.specialty).filter(Boolean))]
+  const filteredDoctors = doctors.filter(d => {
+    const s = search.trim().toLowerCase()
+    const matchSearch = !s || (d.full_name || '').toLowerCase().includes(s) || (d.email || '').toLowerCase().includes(s) || (d.passport_number || '').toLowerCase().includes(s)
+    const matchCountry = !filterCountry || d.nationality === filterCountry
+    const matchSpec = !filterSpecialty || d.specialty === filterSpecialty
+    return matchSearch && matchCountry && matchSpec
   })
 
-  useEffect(() => {
-    fetchDoctors()
-    fetchConferences()
-    fetchInvitations()
-  }, [])
-
-  const fetchDoctors = async () => {
-    const { data } = await supabase.from('doctors').select('*')
-    setDoctors(data || [])
+  // ---------- documents ----------
+  const openDoctorFiles = async (doctor) => {
+    setViewDoctor(doctor)
+    const { data } = await supabase.from('documents').select('*').eq('doctor_id', doctor.id)
+    const withUrls = (data || []).map(doc => ({
+      ...doc,
+      url: supabase.storage.from('doctor-documents').getPublicUrl(doc.file_url).data.publicUrl
+    }))
+    setDocFiles(withUrls)
   }
 
-  const fetchConferences = async () => {
-    const { data } = await supabase.from('conferences').select('*')
-    setConferences(data || [])
-  }
-
-  const fetchInvitations = async () => {
-    const { data } = await supabase.from('invitations').select('*')
-    setInvitations(data || [])
-  }
-
+  // ---------- conference ----------
   const createConference = async (e) => {
     e.preventDefault()
     const { error } = await supabase.from('conferences').insert([newConf])
-    if (!error) {
-      setNewConf({ title: '', location: '', start_date: '', end_date: '', registration_deadline: '' })
-      setShowNewConfForm(false)
-      fetchConferences()
+    if (!error) { setNewConf({ title: '', location: '', start_date: '', end_date: '', registration_deadline: '', description: '' }); setShowConfForm(false); fetchConferences() }
+    else alert(error.message)
+  }
+  const deleteConference = async (id) => { if (confirm('حذف هذا المؤتمر؟')) { await supabase.from('conferences').delete().eq('id', id); fetchConferences() } }
+
+  // ---------- doctor edit/delete ----------
+  const saveDoctor = async (e) => {
+    e.preventDefault()
+    const { id, full_name, specialty, hospital, nationality, passport_number, years_of_experience, email } = editDoctor
+    const { error } = await supabase.from('doctors').update({
+      full_name, specialty, hospital, nationality, passport_number,
+      years_of_experience: years_of_experience ? parseInt(years_of_experience) : null, email
+    }).eq('id', id)
+    if (!error) { setEditDoctor(null); fetchDoctors() } else alert(error.message)
+  }
+  const deleteDoctor = async (id) => {
+    if (confirm('حذف هذا الطبيب نهائياً؟ سيتم حذف دعواته أيضاً.')) {
+      await supabase.from('doctors').delete().eq('id', id)
+      fetchDoctors(); fetchInvitations()
     }
   }
 
-  const issueInvitation = async () => {
-    if (!selectedDoctor || !selectedConference || !travelDate) {
-      alert('الرجاء ملء جميع الحقول')
-      return
-    }
+  // ---------- export ----------
+  const exportExcel = () => {
+    const rows = filteredDoctors.map(d => ({
+      'Name': d.full_name, 'Specialty': d.specialty, 'Hospital': d.hospital,
+      'Passport': d.passport_number, 'Nationality': d.nationality,
+      'Years': d.years_of_experience, 'Email': d.email
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Doctors')
+    XLSX.writeFile(wb, 'doctors.xlsx')
+  }
+  const exportPDF = () => {
+    const pdf = new jsPDF()
+    pdf.setFontSize(16); pdf.text('Fertility Global Research - Doctors', 14, 18)
+    pdf.setFontSize(9)
+    let y = 30
+    pdf.text('Name', 14, y); pdf.text('Specialty', 70, y); pdf.text('Country', 120, y); pdf.text('Passport', 160, y)
+    y += 6
+    filteredDoctors.forEach(d => {
+      if (y > 280) { pdf.addPage(); y = 20 }
+      pdf.text(String(d.full_name || '').slice(0, 30), 14, y)
+      pdf.text(String(d.specialty || '').slice(0, 25), 70, y)
+      pdf.text(String(d.nationality || ''), 120, y)
+      pdf.text(String(d.passport_number || ''), 160, y)
+      y += 6
+    })
+    pdf.save('doctors.pdf')
+  }
 
-    const invNumber = generateInvitationNumber()
+  // ---------- issue invitation ----------
+  const selectedInvDoctor = doctors.find(d => d.id === inv.doctorId)
+  const startInvitation = () => {
+    if (!inv.doctorId || !inv.conferenceId || !inv.travelDate) { alert('اختر الطبيب والمؤتمر وتاريخ السفر'); return }
+    setInv(p => ({ ...p, number: p.number || generateInvitationNumber() }))
+    setInvDoctorEdit({ ...selectedInvDoctor })
+  }
+  const confirmIssue = async () => {
+    const conference = conferences.find(c => c.id === inv.conferenceId)
     const { data, error } = await supabase.from('invitations').insert([{
-      doctor_id: selectedDoctor.id,
-      conference_id: selectedConference,
-      invitation_number: invNumber,
-      issue_date: new Date().toISOString().split('T')[0],
-      travel_date: travelDate,
-      status: 'issued'
+      doctor_id: inv.doctorId, conference_id: inv.conferenceId,
+      invitation_number: inv.number, issue_date: inv.issueDate,
+      travel_date: inv.travelDate, status: 'issued'
     }]).select()
-
-    if (!error && data) {
-      const conference = conferences.find(c => c.id === selectedConference)
-      const pdf = await generateInvitationPDF(selectedDoctor, conference, data[0])
-      pdf.download(`${invNumber}.pdf`)
-      fetchInvitations()
-      setSelectedDoctor(null)
-      setSelectedConference('')
-      setTravelDate('')
-      alert('تم إصدار الدعوة بنجاح')
-    }
+    if (error) { alert(error.message); return }
+    // use edited doctor details for the PDF (without changing DB)
+    const pdf = await generateInvitationPDF(invDoctorEdit, conference, data[0])
+    pdf.save(`${inv.number}.pdf`)
+    setInv({ doctorId: '', conferenceId: '', travelDate: '', issueDate: new Date().toISOString().split('T')[0], number: '' })
+    setInvDoctorEdit(null)
+    fetchInvitations()
+    alert('تم إصدار الدعوة وتنزيل ملف PDF')
   }
-
-  const deleteInvitation = async (invitationId) => {
-    if (confirm('هل أنت متأكد من حذف هذه الدعوة؟')) {
-      await supabase.from('invitations').delete().eq('id', invitationId)
-      fetchInvitations()
-    }
+  const reprint = async (invitation) => {
+    const doctor = doctors.find(d => d.id === invitation.doctor_id)
+    const conference = conferences.find(c => c.id === invitation.conference_id)
+    const pdf = await generateInvitationPDF(doctor, conference, invitation)
+    pdf.save(`${invitation.invitation_number}.pdf`)
   }
+  const deleteInvitation = async (id) => { if (confirm('حذف هذه الدعوة؟')) { await supabase.from('invitations').delete().eq('id', id); fetchInvitations() } }
 
   return (
-    <div className="space-y-8">
-      {/* Create Conference */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-teal-600">المؤتمرات</h2>
-          <button
-            onClick={() => setShowNewConfForm(!showNewConfForm)}
-            className="px-4 py-2 bg-teal-600 text-white rounded hover:bg-teal-700"
-          >
-            {showNewConfForm ? 'إلغاء' : 'مؤتمر جديد'}
-          </button>
-        </div>
+    <div className="admin">
+      <h1>لوحة التحكم</h1>
 
-        {showNewConfForm && (
-          <form onSubmit={createConference} className="space-y-3 mb-6 bg-gray-50 p-4 rounded">
-            <input
-              type="text"
-              placeholder="عنوان المؤتمر"
-              value={newConf.title}
-              onChange={(e) => setNewConf({...newConf, title: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-              required
-            />
-            <input
-              type="text"
-              placeholder="المكان"
-              value={newConf.location}
-              onChange={(e) => setNewConf({...newConf, location: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-              required
-            />
-            <div className="grid grid-cols-3 gap-3">
-              <input
-                type="date"
-                placeholder="تاريخ البدء"
-                value={newConf.start_date}
-                onChange={(e) => setNewConf({...newConf, start_date: e.target.value})}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                required
-              />
-              <input
-                type="date"
-                placeholder="تاريخ النهاية"
-                value={newConf.end_date}
-                onChange={(e) => setNewConf({...newConf, end_date: e.target.value})}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                required
-              />
-              <input
-                type="date"
-                placeholder="آخر موعد تسجيل"
-                value={newConf.registration_deadline}
-                onChange={(e) => setNewConf({...newConf, registration_deadline: e.target.value})}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              إنشاء مؤتمر
-            </button>
-          </form>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {conferences.map(conf => (
-            <div key={conf.id} className="border border-gray-200 rounded-lg p-4">
-              <h3 className="font-bold text-lg">{conf.title}</h3>
-              <p className="text-sm text-gray-600">{conf.location}</p>
-              <p className="text-sm text-gray-600">{conf.start_date} - {conf.end_date}</p>
-            </div>
-          ))}
-        </div>
+      {/* tabs */}
+      <div className="admin-tabs">
+        <button className={tab === 'overview' ? 'atab active' : 'atab'} onClick={() => setTab('overview')}>الإحصائيات</button>
+        <button className={tab === 'doctors' ? 'atab active' : 'atab'} onClick={() => setTab('doctors')}>الأطباء</button>
+        <button className={tab === 'conferences' ? 'atab active' : 'atab'} onClick={() => setTab('conferences')}>المؤتمرات</button>
+        <button className={tab === 'invite' ? 'atab active' : 'atab'} onClick={() => setTab('invite')}>إصدار دعوة</button>
+        <button className={tab === 'invitations' ? 'atab active' : 'atab'} onClick={() => setTab('invitations')}>الدعوات</button>
       </div>
 
-      {/* Issue Invitation */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-teal-600 mb-6">إصدار دعوة</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2">اختر الطبيب</label>
-            <select
-              onChange={(e) => {
-                const doc = doctors.find(d => d.id === e.target.value)
-                setSelectedDoctor(doc)
-              }}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            >
-              <option value="">-- اختر --</option>
-              {doctors.map(doc => (
-                <option key={doc.id} value={doc.id}>
-                  {doc.full_name} - {doc.specialty}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {selectedDoctor && (
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-bold mb-2">بيانات الطبيب:</h3>
-              <p>الاسم: {selectedDoctor.full_name}</p>
-              <p>الجواز: {selectedDoctor.passport_number}</p>
-              <p>الجنسية: {selectedDoctor.nationality}</p>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2">المؤتمر</label>
-            <select
-              value={selectedConference}
-              onChange={(e) => setSelectedConference(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            >
-              <option value="">-- اختر --</option>
-              {conferences.map(conf => (
-                <option key={conf.id} value={conf.id}>
-                  {conf.title}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2">تاريخ السفر</label>
-            <input
-              type="date"
-              value={travelDate}
-              onChange={(e) => setTravelDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
-
-          <button
-            onClick={issueInvitation}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold"
-          >
-            إصدار الدعوة
-          </button>
+      {/* OVERVIEW */}
+      {tab === 'overview' && (
+        <div className="stat-cards">
+          <div className="acard"><span className="acard-num">{doctors.length}</span><span className="acard-lbl">طبيب مسجّل</span></div>
+          <div className="acard"><span className="acard-num">{invitations.length}</span><span className="acard-lbl">دعوة صادرة</span></div>
+          <div className="acard"><span className="acard-num">{conferences.length}</span><span className="acard-lbl">مؤتمر</span></div>
+          <div className="acard"><span className="acard-num">{countries.length}</span><span className="acard-lbl">دولة</span></div>
         </div>
-      </div>
+      )}
 
-      {/* Invitations List */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-teal-600 mb-6">الدعوات الصادرة</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-right p-2">الطبيب</th>
-                <th className="text-right p-2">رقم الدعوة</th>
-                <th className="text-right p-2">المؤتمر</th>
-                <th className="text-right p-2">تاريخ الإصدار</th>
-                <th className="text-right p-2">الحالة</th>
-                <th className="text-right p-2">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invitations.map(inv => {
-                const doc = doctors.find(d => d.id === inv.doctor_id)
-                const conf = conferences.find(c => c.id === inv.conference_id)
-                return (
-                  <tr key={inv.id} className="border-b hover:bg-gray-50">
-                    <td className="p-2">{doc?.full_name}</td>
-                    <td className="p-2">{inv.invitation_number}</td>
-                    <td className="p-2">{conf?.title}</td>
-                    <td className="p-2">{inv.issue_date}</td>
-                    <td className="p-2">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        inv.status === 'issued' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {inv.status === 'issued' ? 'مُصدَّرة' : 'مسودة'}
-                      </span>
-                    </td>
-                    <td className="p-2 space-x-2">
-                      <button
-                        onClick={() => deleteInvitation(inv.id)}
-                        className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                      >
-                        حذف
-                      </button>
+      {/* DOCTORS */}
+      {tab === 'doctors' && (
+        <div className="panel">
+          <div className="filter-bar">
+            <input className="auth-input" placeholder="بحث بالاسم / الإيميل / الجواز" value={search} onChange={e => setSearch(e.target.value)} />
+            <select className="auth-input" value={filterCountry} onChange={e => setFilterCountry(e.target.value)}>
+              <option value="">كل الدول</option>
+              {countries.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select className="auth-input" value={filterSpecialty} onChange={e => setFilterSpecialty(e.target.value)}>
+              <option value="">كل التخصصات</option>
+              {specialties.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="export-row">
+            <span className="muted">النتائج: {filteredDoctors.length}</span>
+            <div>
+              <button className="btn-soft" onClick={exportExcel}>تصدير Excel</button>
+              <button className="btn-soft" onClick={exportPDF}>تصدير PDF</button>
+            </div>
+          </div>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>الاسم</th><th>التخصص</th><th>الدولة</th><th>الجواز</th><th>إجراءات</th></tr></thead>
+              <tbody>
+                {filteredDoctors.map(d => (
+                  <tr key={d.id}>
+                    <td>{d.full_name}</td><td>{d.specialty}</td><td>{d.nationality}</td><td>{d.passport_number}</td>
+                    <td className="row-actions">
+                      <button className="mini" onClick={() => openDoctorFiles(d)}>الملفات</button>
+                      <button className="mini" onClick={() => setEditDoctor({ ...d })}>تعديل</button>
+                      <button className="mini danger" onClick={() => deleteDoctor(d.id)}>حذف</button>
                     </td>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                ))}
+                {filteredDoctors.length === 0 && <tr><td colSpan="5" className="muted center-td">لا يوجد أطباء مطابقون</td></tr>}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Doctors Directory */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-2xl font-bold text-teal-600 mb-6">الأطباء المسجلون</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-right p-2">الاسم</th>
-                <th className="text-right p-2">التخصص</th>
-                <th className="text-right p-2">المستشفى</th>
-                <th className="text-right p-2">الجواز</th>
-                <th className="text-right p-2">الجنسية</th>
-              </tr>
-            </thead>
-            <tbody>
-              {doctors.map(doc => (
-                <tr key={doc.id} className="border-b hover:bg-gray-50">
-                  <td className="p-2">{doc.full_name}</td>
-                  <td className="p-2">{doc.specialty}</td>
-                  <td className="p-2">{doc.hospital}</td>
-                  <td className="p-2">{doc.passport_number}</td>
-                  <td className="p-2">{doc.nationality}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* CONFERENCES */}
+      {tab === 'conferences' && (
+        <div className="panel">
+          <div className="export-row">
+            <h3>المؤتمرات</h3>
+            <button className="btn-primary" onClick={() => setShowConfForm(!showConfForm)}>{showConfForm ? 'إلغاء' : 'مؤتمر جديد'}</button>
+          </div>
+          {showConfForm && (
+            <form onSubmit={createConference} className="conf-form">
+              <input className="auth-input" placeholder="عنوان المؤتمر" value={newConf.title} onChange={e => setNewConf({ ...newConf, title: e.target.value })} required />
+              <input className="auth-input" placeholder="المكان" value={newConf.location} onChange={e => setNewConf({ ...newConf, location: e.target.value })} required />
+              <textarea className="auth-input" placeholder="الوصف" value={newConf.description} onChange={e => setNewConf({ ...newConf, description: e.target.value })} rows="2" />
+              <div className="three-col">
+                <label>البداية<input className="auth-input" type="date" value={newConf.start_date} onChange={e => setNewConf({ ...newConf, start_date: e.target.value })} required /></label>
+                <label>النهاية<input className="auth-input" type="date" value={newConf.end_date} onChange={e => setNewConf({ ...newConf, end_date: e.target.value })} required /></label>
+                <label>آخر تسجيل<input className="auth-input" type="date" value={newConf.registration_deadline} onChange={e => setNewConf({ ...newConf, registration_deadline: e.target.value })} required /></label>
+              </div>
+              <button className="btn-primary full" type="submit">حفظ المؤتمر</button>
+            </form>
+          )}
+          <div className="card-grid">
+            {conferences.map(c => (
+              <div className="event-card" key={c.id}>
+                <h3>{c.title}</h3>
+                <p className="event-loc">📍 {c.location}</p>
+                <p className="muted">{c.start_date} → {c.end_date}</p>
+                <button className="mini danger" onClick={() => deleteConference(c.id)}>حذف</button>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ISSUE INVITATION */}
+      {tab === 'invite' && (
+        <div className="panel">
+          <h3>إصدار دعوة جديدة</h3>
+          <div className="inv-grid">
+            <label>الطبيب
+              <select className="auth-input" value={inv.doctorId} onChange={e => setInv({ ...inv, doctorId: e.target.value })}>
+                <option value="">— اختر —</option>
+                {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name} — {d.specialty}</option>)}
+              </select>
+            </label>
+            <label>المؤتمر
+              <select className="auth-input" value={inv.conferenceId} onChange={e => setInv({ ...inv, conferenceId: e.target.value })}>
+                <option value="">— اختر —</option>
+                {conferences.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </select>
+            </label>
+            <label>تاريخ السفر
+              <input className="auth-input" type="date" value={inv.travelDate} onChange={e => setInv({ ...inv, travelDate: e.target.value })} />
+            </label>
+            <label>تاريخ الإصدار
+              <input className="auth-input" type="date" value={inv.issueDate} onChange={e => setInv({ ...inv, issueDate: e.target.value })} />
+            </label>
+          </div>
+          <button className="btn-primary" onClick={startInvitation}>مراجعة قبل الإصدار</button>
+
+          {invDoctorEdit && (
+            <div className="review-box">
+              <h4>راجع وعدّل بيانات الدعوة قبل الإصدار</h4>
+              <p className="muted">رقم الدعوة: <strong>{inv.number}</strong> (يمكن تعديله)</p>
+              <input className="auth-input" value={inv.number} onChange={e => setInv({ ...inv, number: e.target.value })} placeholder="رقم الدعوة" />
+              <div className="two-col">
+                <input className="auth-input" value={invDoctorEdit.full_name} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, full_name: e.target.value })} placeholder="الاسم" />
+                <input className="auth-input" value={invDoctorEdit.passport_number} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, passport_number: e.target.value })} placeholder="الجواز" />
+                <input className="auth-input" value={invDoctorEdit.specialty} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, specialty: e.target.value })} placeholder="التخصص" />
+                <input className="auth-input" value={invDoctorEdit.hospital} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, hospital: e.target.value })} placeholder="المستشفى" />
+                <input className="auth-input" value={invDoctorEdit.nationality} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, nationality: e.target.value })} placeholder="الجنسية" />
+              </div>
+              <button className="btn-primary full" onClick={confirmIssue}>إصدار الدعوة وتنزيل PDF</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* INVITATIONS LIST */}
+      {tab === 'invitations' && (
+        <div className="panel">
+          <h3>الدعوات الصادرة</h3>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>الطبيب</th><th>رقم الدعوة</th><th>المؤتمر</th><th>الإصدار</th><th>إجراءات</th></tr></thead>
+              <tbody>
+                {invitations.map(i => {
+                  const d = doctors.find(x => x.id === i.doctor_id)
+                  const c = conferences.find(x => x.id === i.conference_id)
+                  return (
+                    <tr key={i.id}>
+                      <td>{d?.full_name || '—'}</td><td>{i.invitation_number}</td><td>{c?.title || '—'}</td><td>{i.issue_date}</td>
+                      <td className="row-actions">
+                        <button className="mini" onClick={() => reprint(i)}>PDF</button>
+                        <button className="mini danger" onClick={() => deleteInvitation(i.id)}>حذف</button>
+                      </td>
+                    </tr>
+                  )
+                })}
+                {invitations.length === 0 && <tr><td colSpan="5" className="muted center-td">لا توجد دعوات</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* VIEW FILES MODAL */}
+      {viewDoctor && (
+        <div className="modal-overlay" onClick={() => setViewDoctor(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>مستمسكات: {viewDoctor.full_name}</h3>
+            {docFiles.length === 0 ? <p className="muted">لم يرفع هذا الطبيب أي ملفات بعد.</p> : (
+              <div className="files-grid">
+                {docFiles.map(f => (
+                  <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="file-chip">
+                    📄 {f.document_type}
+                  </a>
+                ))}
+              </div>
+            )}
+            <button className="btn-soft" onClick={() => setViewDoctor(null)}>إغلاق</button>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT DOCTOR MODAL */}
+      {editDoctor && (
+        <div className="modal-overlay" onClick={() => setEditDoctor(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>تعديل بيانات الطبيب</h3>
+            <form onSubmit={saveDoctor} className="auth-form">
+              <input className="auth-input" value={editDoctor.full_name || ''} onChange={e => setEditDoctor({ ...editDoctor, full_name: e.target.value })} placeholder="الاسم" />
+              <input className="auth-input" value={editDoctor.specialty || ''} onChange={e => setEditDoctor({ ...editDoctor, specialty: e.target.value })} placeholder="التخصص" />
+              <input className="auth-input" value={editDoctor.hospital || ''} onChange={e => setEditDoctor({ ...editDoctor, hospital: e.target.value })} placeholder="المستشفى" />
+              <input className="auth-input" value={editDoctor.passport_number || ''} onChange={e => setEditDoctor({ ...editDoctor, passport_number: e.target.value })} placeholder="الجواز" />
+              <input className="auth-input" value={editDoctor.nationality || ''} onChange={e => setEditDoctor({ ...editDoctor, nationality: e.target.value })} placeholder="الجنسية" />
+              <input className="auth-input" type="number" value={editDoctor.years_of_experience || ''} onChange={e => setEditDoctor({ ...editDoctor, years_of_experience: e.target.value })} placeholder="سنوات الخبرة" />
+              <div className="two-col">
+                <button className="btn-primary" type="submit">حفظ</button>
+                <button className="btn-soft" type="button" onClick={() => setEditDoctor(null)}>إلغاء</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

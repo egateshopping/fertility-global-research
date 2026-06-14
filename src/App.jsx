@@ -7,11 +7,13 @@ import { DoctorDirectory, ConferencesPage, BlogPage } from './pages/AdditionalPa
 import AboutPage from './pages/AboutPage'
 import NewsActivitiesPage from './pages/NewsActivitiesPage'
 import HomePage from './pages/HomePage'
+import { useLang } from './i18n.jsx'
 import './App.css'
 
 const ADMIN_EMAILS = ['admin@fertility-global.org']
 
 export default function App() {
+  const { t, lang, toggle } = useLang()
   const [user, setUser] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -102,23 +104,25 @@ export default function App() {
           </button>
 
           <div className="nav-links">
-            <button className={navCls(currentPage, 'home')} onClick={() => goTo('home')}>الرئيسية</button>
-            <button className={navCls(currentPage, 'about')} onClick={() => goTo('about')}>عن الجمعية</button>
-            <button className={navCls(currentPage, 'news')} onClick={() => goTo('news')}>النشاطات</button>
-            <button className={navCls(currentPage, 'conferences')} onClick={() => goTo('conferences')}>المؤتمرات</button>
-            <button className={navCls(currentPage, 'directory')} onClick={() => goTo('directory')}>دليل الأطباء</button>
+            <button className={navCls(currentPage, 'home')} onClick={() => goTo('home')}>{t('nav_home')}</button>
+            <button className={navCls(currentPage, 'about')} onClick={() => goTo('about')}>{t('nav_about')}</button>
+            <button className={navCls(currentPage, 'news')} onClick={() => goTo('news')}>{t('nav_news')}</button>
+            <button className={navCls(currentPage, 'conferences')} onClick={() => goTo('conferences')}>{t('nav_conferences')}</button>
+            <button className={navCls(currentPage, 'directory')} onClick={() => goTo('directory')}>{t('nav_directory')}</button>
 
             {user && !isAdmin && (
-              <button className={navCls(currentPage, 'dashboard')} onClick={() => goTo('dashboard')}>ملفي</button>
+              <button className={navCls(currentPage, 'dashboard')} onClick={() => goTo('dashboard')}>{t('nav_profile')}</button>
             )}
             {user && isAdmin && (
-              <button className={navCls(currentPage, 'admin')} onClick={() => goTo('admin')}>لوحة التحكم</button>
+              <button className={navCls(currentPage, 'admin')} onClick={() => goTo('admin')}>{t('nav_admin')}</button>
             )}
 
+            <button className="lang-toggle" onClick={toggle}>{lang === 'ar' ? 'EN' : 'ع'}</button>
+
             {user ? (
-              <button className="nav-cta" onClick={handleLogout}>خروج</button>
+              <button className="nav-cta" onClick={handleLogout}>{t('nav_logout')}</button>
             ) : (
-              <button className="nav-cta" onClick={() => setAuthView('login')}>دخول</button>
+              <button className="nav-cta" onClick={() => setAuthView('login')}>{t('nav_login')}</button>
             )}
           </div>
         </div>
@@ -140,21 +144,21 @@ export default function App() {
           <div>
             <img src="/logo.png" alt="" className="footer-logo" />
             <p className="footer-org">Fertility Global Research</p>
-            <p className="footer-small">جمعية الخصوبة العالمية للبحث العلمي</p>
+            <p className="footer-small">{t('hero_sub')}</p>
           </div>
           <div>
-            <h4>تواصل</h4>
+            <h4>{t('foot_contact')}</h4>
             <p>London, United Kingdom</p>
             <p>contact@fertility-global.org</p>
           </div>
           <div>
-            <h4>روابط</h4>
-            <button className="footer-link" onClick={() => goTo('about')}>عن الجمعية</button>
-            <button className="footer-link" onClick={() => goTo('conferences')}>المؤتمرات</button>
-            <button className="footer-link" onClick={() => goTo('news')}>النشاطات</button>
+            <h4>{t('foot_links')}</h4>
+            <button className="footer-link" onClick={() => goTo('about')}>{t('nav_about')}</button>
+            <button className="footer-link" onClick={() => goTo('conferences')}>{t('nav_conferences')}</button>
+            <button className="footer-link" onClick={() => goTo('news')}>{t('nav_news')}</button>
           </div>
         </div>
-        <div className="footer-bottom">© 2026 Fertility Global Research. جميع الحقوق محفوظة.</div>
+        <div className="footer-bottom">{t('foot_rights')}</div>
       </footer>
     </div>
   )

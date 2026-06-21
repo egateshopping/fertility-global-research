@@ -208,9 +208,11 @@ img{max-width:100%;display:block}
 }
 
 /* ===== Auth extras (eye, forgot, confirm, reports) ===== */
-.pw-wrap{position:relative;display:flex;align-items:center}
-.pw-wrap .auth-input{flex:1;padding-right:2.8rem !important}
-.eye-btn{position:absolute;right:.7rem;background:none;font-size:1.2rem;line-height:1;padding:.2rem;color:var(--muted);z-index:2}
+.pw-wrap{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;background:#fff;transition:.2s}
+.pw-wrap:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px rgba(26,143,168,.12)}
+.pw-wrap .auth-input{flex:1;border:none !important;border-radius:10px 0 0 10px;box-shadow:none !important;background:transparent}
+.pw-wrap .auth-input:focus{border:none !important;box-shadow:none !important}
+.eye-btn{padding:.55rem .8rem;background:transparent;font-size:1.2rem;color:var(--muted);border:none;border-radius:0 10px 10px 0;cursor:pointer;flex-shrink:0}
 .eye-btn:hover{color:var(--navy)}
 .auth-forgot{align-self:flex-end;color:var(--teal);font-size:.9rem;font-weight:700;margin-top:.1rem;text-decoration:underline}
 .auth-forgot:hover{color:var(--navy)}

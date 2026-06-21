@@ -9,6 +9,7 @@ export default function AdminDashboard() {
   const [doctors, setDoctors] = useState([])
   const [conferences, setConferences] = useState([])
   const [invitations, setInvitations] = useState([])
+  const [reports, setReports] = useState([])
 
   // doctor search/filter
   const [search, setSearch] = useState('')
@@ -30,10 +31,11 @@ export default function AdminDashboard() {
 
   useEffect(() => { refreshAll() }, [])
 
-  const refreshAll = () => { fetchDoctors(); fetchConferences(); fetchInvitations() }
+  const refreshAll = () => { fetchDoctors(); fetchConferences(); fetchInvitations(); fetchReports() }
   const fetchDoctors = async () => { const { data } = await supabase.from('doctors').select('*').order('created_at', { ascending: false }); setDoctors(data || []) }
   const fetchConferences = async () => { const { data } = await supabase.from('conferences').select('*'); setConferences(data || []) }
   const fetchInvitations = async () => { const { data } = await supabase.from('invitations').select('*').order('created_at', { ascending: false }); setInvitations(data || []) }
+  const fetchReports = async () => { const { data } = await supabase.from('reports').select('*').order('created_at', { ascending: false }); setReports(data || []) }
 
   // ---------- filters ----------
   const countries = [...new Set(doctors.map(d => d.nationality).filter(Boolean))]
@@ -113,7 +115,43 @@ export default function AdminDashboard() {
     pdf.save('doctors.pdf')
   }
 
-  // ---------- issue invitation ----------
+  // ---------- instant issue (no review step) ----------
+  const instantIssue = async () => {
+    if (!inv.doctorId || !inv.conferenceId || !inv.travelDate) {
+      alert('اختر الطبيب والمؤتمر وتاريخ السفر أولاً')
+      return
+    }
+    const doctor = doctors.find(d => d.id === inv.doctorId)
+    const conference = conferences.find(c => c.id === inv.conferenceId)
+    const invNumber = inv.number || generateInvitationNumber()
+    const issueDate = inv.issueDate || new Date().toISOString().split('T')[0]
+
+    const { data, error } = await supabase.from('invitations').insert([{
+      doctor_id: inv.doctorId,
+      conference_id: inv.conferenceId,
+      invitation_number: invNumber,
+      issue_date: issueDate,
+      travel_date: inv.travelDate,
+      status: 'issued'
+    }]).select()
+
+    if (error) { alert(error.message); return }
+
+    const pdf = await generateInvitationPDF(doctor, conference, data[0])
+    pdf.save(`${invNumber}.pdf`)
+    setInv({ doctorId: '', conferenceId: '', travelDate: '', issueDate: new Date().toISOString().split('T')[0], number: '' })
+    setInvDoctorEdit(null)
+    fetchInvitations()
+  }
+
+  // ---------- admin assignment ----------
+  const toggleAdmin = async (doctor) => {
+    const newVal = !doctor.is_admin
+    await supabase.from('doctors').update({ is_admin: newVal }).eq('id', doctor.id)
+    fetchDoctors()
+  }
+
+  // ---------- issue invitation (review) ----------
   const selectedInvDoctor = doctors.find(d => d.id === inv.doctorId)
   const startInvitation = () => {
     if (!inv.doctorId || !inv.conferenceId || !inv.travelDate) { alert('اختر الطبيب والمؤتمر وتاريخ السفر'); return }
@@ -143,6 +181,7 @@ export default function AdminDashboard() {
     pdf.save(`${invitation.invitation_number}.pdf`)
   }
   const deleteInvitation = async (id) => { if (confirm('حذف هذه الدعوة؟')) { await supabase.from('invitations').delete().eq('id', id); fetchInvitations() } }
+  const deleteReport = async (id) => { if (confirm('حذف هذا البلاغ؟')) { await supabase.from('reports').delete().eq('id', id); fetchReports() } }
 
   return (
     <div className="admin">
@@ -155,6 +194,7 @@ export default function AdminDashboard() {
         <button className={tab === 'conferences' ? 'atab active' : 'atab'} onClick={() => setTab('conferences')}>المؤتمرات</button>
         <button className={tab === 'invite' ? 'atab active' : 'atab'} onClick={() => setTab('invite')}>إصدار دعوة</button>
         <button className={tab === 'invitations' ? 'atab active' : 'atab'} onClick={() => setTab('invitations')}>الدعوات</button>
+        <button className={tab === 'reports' ? 'atab active' : 'atab'} onClick={() => setTab('reports')}>البلاغات{reports.length ? ` (${reports.length})` : ''}</button>
       </div>
 
       {/* OVERVIEW */}
@@ -198,6 +238,13 @@ export default function AdminDashboard() {
                     <td className="row-actions">
                       <button className="mini" onClick={() => openDoctorFiles(d)}>الملفات</button>
                       <button className="mini" onClick={() => setEditDoctor({ ...d })}>تعديل</button>
+                      <button
+                        className={d.is_admin ? 'mini danger' : 'mini admin-btn'}
+                        onClick={() => toggleAdmin(d)}
+                        title={d.is_admin ? 'إلغاء صلاحية الأدمن' : 'تعيين كأدمن'}
+                      >
+                        {d.is_admin ? '🔴 إلغاء أدمن' : '🟢 تعيين أدمن'}
+                      </button>
                       <button className="mini danger" onClick={() => deleteDoctor(d.id)}>حذف</button>
                     </td>
                   </tr>
@@ -266,7 +313,10 @@ export default function AdminDashboard() {
               <input className="auth-input" type="date" value={inv.issueDate} onChange={e => setInv({ ...inv, issueDate: e.target.value })} />
             </label>
           </div>
-          <button className="btn-primary" onClick={startInvitation}>مراجعة قبل الإصدار</button>
+          <div className="inv-btns">
+            <button className="btn-primary" onClick={instantIssue}>⚡ إصدار فوري + تنزيل PDF</button>
+            <button className="btn-soft" onClick={startInvitation}>مراجعة قبل الإصدار</button>
+          </div>
 
           {invDoctorEdit && (
             <div className="review-box">
@@ -308,6 +358,30 @@ export default function AdminDashboard() {
                   )
                 })}
                 {invitations.length === 0 && <tr><td colSpan="5" className="muted center-td">لا توجد دعوات</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* REPORTS */}
+      {tab === 'reports' && (
+        <div className="panel">
+          <h3>البلاغات عن الحسابات الوهمية</h3>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>المُبلَّغ عنه</th><th>السبب</th><th>بريد المُبلِّغ</th><th>التاريخ</th><th>إجراء</th></tr></thead>
+              <tbody>
+                {reports.map(r => (
+                  <tr key={r.id}>
+                    <td>{r.reported_name}</td>
+                    <td>{r.reason}</td>
+                    <td>{r.reporter_email || '—'}</td>
+                    <td>{(r.created_at || '').split('T')[0]}</td>
+                    <td><button className="mini danger" onClick={() => deleteReport(r.id)}>حذف</button></td>
+                  </tr>
+                ))}
+                {reports.length === 0 && <tr><td colSpan="5" className="muted center-td">لا توجد بلاغات</td></tr>}
               </tbody>
             </table>
           </div>

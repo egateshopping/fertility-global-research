@@ -1,206 +1,203 @@
 import jsPDF from 'jspdf'
 
-export const generateInvitationPDF = (doctor, conference, invitation) => {
+// Load an image URL as base64 for jsPDF
+const loadImageAsBase64 = (url) =>
+  new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => resolve(null)
+    img.src = url
+  })
+
+export const generateInvitationPDF = async (doctor, conference, invitation) => {
   const pdf = new jsPDF('p', 'mm', 'a4')
-  
-  // Set up colors
-  const primaryColor = [24, 174, 150] // Teal
-  const darkColor = [15, 23, 42] // Dark blue
-  const textColor = [0, 0, 0]
-  
-  // Header with logo area
-  pdf.setFillColor(...primaryColor)
-  pdf.rect(0, 0, 210, 60, 'F')
-  
-  // Title
-  pdf.setTextColor(255, 255, 255)
+
+  const teal   = [26, 143, 168]
+  const navy   = [11, 46, 92]
+  const white  = [255, 255, 255]
+  const black  = [0, 0, 0]
+  const grey   = [100, 100, 100]
+
+  // ── HEADER BAND ──────────────────────────────────────────────────────────
+  pdf.setFillColor(...navy)
+  pdf.rect(0, 0, 210, 42, 'F')
+  pdf.setFillColor(...teal)
+  pdf.rect(0, 38, 210, 4, 'F')
+
+  // Logo (top-left)
+  try {
+    const logoB64 = await loadImageAsBase64('/logo.png')
+    if (logoB64) pdf.addImage(logoB64, 'PNG', 12, 5, 28, 28)
+  } catch (_) {}
+
+  pdf.setTextColor(...white)
   pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(24)
-  pdf.text('FERTILITY GLOBAL RESEARCH', 20, 25)
-  pdf.setFontSize(12)
-  pdf.text('Advancing Fertility Science Worldwide', 20, 35)
-  
-  // Arabic title
-  pdf.setFont('Arial', 'bold')
-  pdf.text('جمعية الخصوبة العالمية للبحث العلمي', 190, 25, { align: 'right' })
-  pdf.setFontSize(10)
-  pdf.text('تقدم العلوم الطبية في مجال الخصوبة عالمياً', 190, 35, { align: 'right' })
-  
-  // Reset text color
-  pdf.setTextColor(...textColor)
-  
-  // Invitation Letter Title
+  pdf.setFontSize(15)
+  pdf.text('FERTILITY GLOBAL RESEARCH', 44, 17)
+  pdf.setFont('Helvetica', 'normal')
+  pdf.setFontSize(9)
+  pdf.text('Advancing Fertility Science Worldwide', 44, 24)
+  pdf.setFontSize(8)
+  pdf.text('London, United Kingdom  |  contact@fertility-global.org', 44, 30)
+
+  // ── INVITATION TITLE ─────────────────────────────────────────────────────
+  pdf.setTextColor(...navy)
   pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(16)
-  pdf.text('INVITATION LETTER', 20, 75)
-  
-  pdf.setFont('Arial', 'bold')
-  pdf.setFontSize(16)
-  pdf.text('خطاب دعوة', 190, 75, { align: 'right' })
-  
-  // Line separator
-  pdf.setDrawColor(...primaryColor)
-  pdf.setLineWidth(0.5)
-  pdf.line(20, 80, 190, 80)
-  
-  // TO section
+  pdf.setFontSize(14)
+  pdf.text('INVITATION LETTER', 105, 54, { align: 'center' })
+  pdf.setDrawColor(...teal)
+  pdf.setLineWidth(0.6)
+  pdf.line(20, 57, 190, 57)
+
+  // ── META ROW ─────────────────────────────────────────────────────────────
+  pdf.setTextColor(...grey)
+  pdf.setFont('Helvetica', 'normal')
+  pdf.setFontSize(8)
+  pdf.text(`Invitation No: ${invitation.invitation_number}`, 20, 63)
+  pdf.text(`Issue Date: ${invitation.issue_date}`, 105, 63, { align: 'center' })
+  pdf.text(`Travel Date: ${invitation.travel_date || '—'}`, 190, 63, { align: 'right' })
+
+  pdf.setDrawColor(220, 220, 220)
+  pdf.setLineWidth(0.3)
+  pdf.line(20, 66, 190, 66)
+
+  // ── TO / FROM ────────────────────────────────────────────────────────────
+  let y = 74
+
+  // TO block
+  pdf.setTextColor(...navy)
   pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(11)
-  pdf.text('TO:', 20, 90)
-  
-  pdf.setFont('Arial', 'bold')
-  pdf.setFontSize(11)
-  pdf.text('إلى:', 190, 90, { align: 'right' })
-  
-  // Doctor information
-  pdf.setFont('Helvetica', 'regular')
-  pdf.setFontSize(10)
-  let yPosition = 100
-  
-  const doctorInfo = [
-    `Name: ${doctor.full_name}`,
-    `Passport No: ${doctor.passport_number}`,
+  pdf.setFontSize(9)
+  pdf.text('TO:', 20, y)
+
+  pdf.setFont('Helvetica', 'normal')
+  pdf.setTextColor(...black)
+  const toLines = [
+    `Dr. ${doctor.full_name}`,
+    `Passport No.: ${doctor.passport_number}`,
     `Specialty: ${doctor.specialty}`,
     `Hospital: ${doctor.hospital}`,
     `Nationality: ${doctor.nationality}`,
-    `Email: ${doctor.email}`
   ]
-  
-  const doctorInfoAr = [
-    `الاسم: ${doctor.full_name}`,
-    `رقم الجواز: ${doctor.passport_number}`,
-    `التخصص: ${doctor.specialty}`,
-    `المستشفى: ${doctor.hospital}`,
-    `الجنسية: ${doctor.nationality}`,
-    `البريد الإلكتروني: ${doctor.email}`
-  ]
-  
-  for (let i = 0; i < doctorInfo.length; i++) {
-    pdf.setFont('Helvetica', 'regular')
-    pdf.setFontSize(9)
-    pdf.text(doctorInfo[i], 20, yPosition)
-    
-    pdf.setFont('Arial', 'regular')
-    pdf.setFontSize(9)
-    pdf.text(doctorInfoAr[i], 190, yPosition, { align: 'right' })
-    
-    yPosition += 6
-  }
-  
-  // Space
-  yPosition += 5
-  
-  // From section
+  toLines.forEach((line, i) => {
+    pdf.setFontSize(i === 0 ? 10 : 9)
+    if (i === 0) pdf.setFont('Helvetica', 'bold')
+    else pdf.setFont('Helvetica', 'normal')
+    pdf.text(line, 30, y + 7 + i * 6)
+  })
+
+  // FROM block (right column)
   pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(11)
-  pdf.text('FROM:', 20, yPosition)
-  
-  pdf.setFont('Arial', 'bold')
-  pdf.text('من:', 190, yPosition, { align: 'right' })
-  
-  yPosition += 8
-  
-  // Organization info
-  pdf.setFont('Helvetica', 'regular')
   pdf.setFontSize(9)
-  const orgInfo = [
+  pdf.setTextColor(...navy)
+  pdf.text('FROM:', 115, y)
+  pdf.setFont('Helvetica', 'normal')
+  pdf.setTextColor(...black)
+  const fromLines = [
     'Fertility Global Research',
     'London, United Kingdom',
-    'Email: contact@fertility-global.org'
+    'contact@fertility-global.org',
+    'fertility-global.org',
   ]
-  
-  const orgInfoAr = [
-    'جمعية الخصوبة العالمية للبحث العلمي',
-    'لندن، المملكة المتحدة',
-    'البريد الإلكتروني: contact@fertility-global.org'
-  ]
-  
-  for (let i = 0; i < orgInfo.length; i++) {
-    pdf.setFont('Helvetica', 'regular')
-    pdf.text(orgInfo[i], 20, yPosition)
-    
-    pdf.setFont('Arial', 'regular')
-    pdf.text(orgInfoAr[i], 190, yPosition, { align: 'right' })
-    
-    yPosition += 5
-  }
-  
-  yPosition += 5
-  
-  // Invitation details
+  fromLines.forEach((line, i) => {
+    pdf.setFontSize(i === 0 ? 10 : 9)
+    if (i === 0) pdf.setFont('Helvetica', 'bold')
+    else pdf.setFont('Helvetica', 'normal')
+    pdf.text(line, 125, y + 7 + i * 6)
+  })
+
+  y += 44
+
+  pdf.setDrawColor(220, 220, 220)
+  pdf.line(20, y, 190, y)
+  y += 8
+
+  // ── SUBJECT ──────────────────────────────────────────────────────────────
+  pdf.setFillColor(240, 248, 252)
+  pdf.roundedRect(20, y - 4, 170, 10, 2, 2, 'F')
   pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(11)
-  pdf.text('RE: Conference Invitation', 20, yPosition)
-  
-  pdf.setFont('Arial', 'bold')
-  pdf.text('الموضوع: دعوة حضور مؤتمر', 190, yPosition, { align: 'right' })
-  
-  yPosition += 10
-  
-  // Body text
-  pdf.setFont('Helvetica', 'regular')
+  pdf.setFontSize(9.5)
+  pdf.setTextColor(...navy)
+  pdf.text(`RE: Invitation to attend — ${conference.title}`, 25, y + 3)
+  y += 14
+
+  // ── BODY ─────────────────────────────────────────────────────────────────
+  pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(10)
-  
-  const bodyText = [
-    'Dear Dr. ' + doctor.full_name + ',',
+  pdf.setTextColor(...black)
+
+  const bodyParagraphs = [
+    `Dear Dr. ${doctor.full_name},`,
     '',
-    'We are pleased to invite you to attend the upcoming conference:',
+    `We are pleased and honoured to invite you to attend and participate in the upcoming event organised by Fertility Global Research:`,
     '',
-    conference.title,
-    conference.location,
-    conference.start_date + ' to ' + conference.end_date,
+    `    ${conference.title}`,
+    `    ${conference.location}`,
+    `    ${conference.start_date}${conference.end_date ? ' — ' + conference.end_date : ''}`,
     '',
-    'Invitation Details:',
-    `Invitation Number: ${invitation.invitation_number}`,
-    `Issue Date: ${invitation.issue_date}`,
-    `Travel Date: ${invitation.travel_date}`,
+    `The conference programme will include scientific presentations covering recent advances in fertility medicine and reproductive science, as well as workshops on medical education, training, and best practice.`,
     '',
-    'We look forward to your participation and valuable contributions.',
+    `Your expertise and participation would be a valuable contribution to the scientific programme. We look forward to welcoming you.`,
     '',
-    'Sincerely,',
-    'Fertility Global Research'
+    `Yours sincerely,`,
   ]
-  
-  const bodyTextAr = [
-    'سيادة الدكتور / الدكتورة ' + doctor.full_name + '،',
-    '',
-    'يسعدنا دعوتكم لحضور المؤتمر القادم:',
-    '',
-    conference.title,
-    conference.location,
-    conference.start_date + ' إلى ' + conference.end_date,
-    '',
-    'تفاصيل الدعوة:',
-    `رقم الدعوة: ${invitation.invitation_number}`,
-    `تاريخ الإصدار: ${invitation.issue_date}`,
-    `تاريخ السفر: ${invitation.travel_date}`,
-    '',
-    'نتطلع إلى مشاركتكم وإسهاماتكم القيمة.',
-    '',
-    'مع خالص التقدير،',
-    'جمعية الخصوبة العالمية للبحث العلمي'
-  ]
-  
-  for (let i = 0; i < bodyText.length; i++) {
-    pdf.setFont('Helvetica', 'regular')
-    pdf.text(bodyText[i], 20, yPosition)
-    
-    pdf.setFont('Arial', 'regular')
-    pdf.text(bodyTextAr[i], 190, yPosition, { align: 'right' })
-    
-    yPosition += 5
-    
-    if (yPosition > 270) {
-      pdf.addPage()
-      yPosition = 20
+
+  bodyParagraphs.forEach(line => {
+    if (y > 250) { pdf.addPage(); y = 20 }
+    if (line === '') { y += 4; return }
+    const wrapped = pdf.splitTextToSize(line, 170)
+    wrapped.forEach(wl => {
+      pdf.text(wl, 20, y)
+      y += 6
+    })
+  })
+
+  y += 4
+
+  // ── SIGNATURE ────────────────────────────────────────────────────────────
+  if (y > 230) { pdf.addPage(); y = 20 }
+
+  try {
+    const sigB64 = await loadImageAsBase64('/signature.jpg')
+    if (sigB64) {
+      // Draw signature image (keep aspect; width 50mm)
+      pdf.addImage(sigB64, 'JPEG', 20, y, 50, 22)
+      y += 26
     }
-  }
-  
-  // Footer
-  pdf.setFontSize(8)
-  pdf.setTextColor(128, 128, 128)
-  pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 285)
-  pdf.text(`Valid for travel to ${conference.location}`, 190, 285, { align: 'right' })
-  
+  } catch (_) { y += 10 }
+
+  pdf.setFont('Helvetica', 'bold')
+  pdf.setFontSize(10)
+  pdf.setTextColor(...navy)
+  pdf.text('Mohammed Khayyat', 20, y)
+  y += 6
+  pdf.setFont('Helvetica', 'normal')
+  pdf.setFontSize(9)
+  pdf.setTextColor(...grey)
+  pdf.text('President', 20, y)
+  y += 5
+  pdf.text('Fertility Global Research', 20, y)
+  y += 5
+  pdf.text('London, United Kingdom', 20, y)
+
+  // ── FOOTER BAND ──────────────────────────────────────────────────────────
+  pdf.setFillColor(...navy)
+  pdf.rect(0, 282, 210, 15, 'F')
+  pdf.setTextColor(...white)
+  pdf.setFont('Helvetica', 'normal')
+  pdf.setFontSize(7.5)
+  pdf.text('Fertility Global Research  |  London, United Kingdom', 20, 290)
+  pdf.text('contact@fertility-global.org  |  fertility-global.org', 190, 290, { align: 'right' })
+
   return pdf
 }

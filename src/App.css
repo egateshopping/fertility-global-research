@@ -206,3 +206,18 @@ img{max-width:100%;display:block}
   .filter-bar{grid-template-columns:1fr}
   .inv-grid,.two-col,.three-col{grid-template-columns:1fr}
 }
+
+/* ===== Auth extras (eye, forgot, confirm, reports) ===== */
+.pw-wrap{position:relative;display:flex;align-items:center}
+.pw-wrap .auth-input{flex:1;padding-right:2.8rem !important}
+.eye-btn{position:absolute;right:.7rem;background:none;font-size:1.2rem;line-height:1;padding:.2rem;color:var(--muted);z-index:2}
+.eye-btn:hover{color:var(--navy)}
+.auth-forgot{align-self:flex-end;color:var(--teal);font-size:.9rem;font-weight:700;margin-top:.1rem;text-decoration:underline}
+.auth-forgot:hover{color:var(--navy)}
+.auth-ok{background:#e6f7ee;color:#1a7a4f;padding:.9rem 1rem;border-radius:10px;font-weight:700;text-align:center}
+.report-form{display:flex;flex-direction:column;gap:.7rem;max-width:560px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.5rem}
+
+/* instant issue + admin toggle */
+.inv-btns{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:.5rem}
+.mini.admin-btn{background:#e8f7ee;color:#1a7a4f}
+.mini.admin-btn:hover{background:#1a7a4f;color:#fff}

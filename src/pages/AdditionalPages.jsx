@@ -1,86 +1,56 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
+import { useLang } from '../i18n.jsx'
 
-export function DoctorDirectory() {
-  const [doctors, setDoctors] = useState([])
-  const [filteredDoctors, setFilteredDoctors] = useState([])
+export function DoctorDirectory({ profession = 'doctor' }) {
+  const { t } = useLang()
+  const [people, setPeople] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [specialtyFilter, setSpecialtyFilter] = useState('')
-  const [specialties, setSpecialties] = useState([])
 
-  useEffect(() => {
-    fetchDoctors()
-  }, [])
+  useEffect(() => { fetchPeople() }, [profession])
 
-  const fetchDoctors = async () => {
-    const { data } = await supabase.from('doctors').select('*')
-    setDoctors(data || [])
-    setFilteredDoctors(data || [])
-    
-    // Extract unique specialties
-    const specs = [...new Set(data?.map(d => d.specialty) || [])]
-    setSpecialties(specs)
+  const fetchPeople = async () => {
+    let query = supabase.from('doctors').select('*')
+    const { data } = await query
+    // filter by profession (older records may have null profession => treat as doctor)
+    const list = (data || []).filter(d => (d.profession || 'doctor') === profession)
+    setPeople(list)
   }
 
-  useEffect(() => {
-    let filtered = doctors
-    
-    if (searchTerm) {
-      filtered = filtered.filter(d => d.full_name.includes(searchTerm))
-    }
-    
-    if (specialtyFilter) {
-      filtered = filtered.filter(d => d.specialty === specialtyFilter)
-    }
-    
-    setFilteredDoctors(filtered)
-  }, [searchTerm, specialtyFilter, doctors])
+  const specialties = [...new Set(people.map(d => d.specialty).filter(Boolean))]
+  const filtered = people.filter(d => {
+    const s = searchTerm.trim()
+    const matchSearch = !s || (d.full_name || '').includes(s)
+    const matchSpec = !specialtyFilter || d.specialty === specialtyFilter
+    return matchSearch && matchSpec
+  })
+
+  const title = profession === 'pharmacist' ? t('dir_pharmacists')
+    : profession === 'medical' ? t('dir_medical') : t('dir_doctors')
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <h2 className="text-3xl font-bold text-teal-600 mb-6">دليل الأطباء</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <input
-            type="text"
-            placeholder="ابحث عن طبيب..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-teal-500"
-          />
-          <select
-            value={specialtyFilter}
-            onChange={(e) => setSpecialtyFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-teal-500"
-          >
-            <option value="">جميع التخصصات</option>
-            {specialties.map(spec => (
-              <option key={spec} value={spec}>{spec}</option>
-            ))}
-          </select>
-        </div>
+    <div>
+      <h1>{title}</h1>
+      <div className="filter-bar" style={{ marginBottom: '1.2rem' }}>
+        <input className="auth-input" placeholder={t('nav_directory') + ' ...'} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+        <select className="auth-input" value={specialtyFilter} onChange={e => setSpecialtyFilter(e.target.value)}>
+          <option value="">—</option>
+          {specialties.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDoctors.map(doc => (
-            <div key={doc.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition">
-              <h3 className="font-bold text-lg text-teal-600 mb-2">{doc.full_name}</h3>
-              <p className="text-sm text-gray-600 mb-1"><strong>التخصص:</strong> {doc.specialty}</p>
-              <p className="text-sm text-gray-600 mb-1"><strong>المستشفى:</strong> {doc.hospital}</p>
-              <p className="text-sm text-gray-600 mb-1"><strong>الجنسية:</strong> {doc.nationality}</p>
-              <p className="text-sm text-gray-600"><strong>سنوات الخبرة:</strong> {doc.years_of_experience}</p>
-              {doc.fertility_specialist && (
-                <span className="inline-block mt-3 px-2 py-1 bg-teal-100 text-teal-800 text-xs font-semibold rounded">
-                  متخصص في الخصوبة
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {filteredDoctors.length === 0 && (
-          <p className="text-center text-gray-600 py-8">لم يتم العثور على أطباء</p>
-        )}
+      <div className="card-grid">
+        {filtered.map(d => (
+          <div className="event-card" key={d.id}>
+            <h3>{d.full_name}</h3>
+            <p className="muted">{d.specialty}</p>
+            <p className="muted">🏥 {d.hospital}</p>
+            <p className="muted">🌍 {d.nationality}</p>
+            {d.fertility_specialist && <span className="news-cat" style={{ marginTop: '.5rem', display: 'inline-block' }}>{t('reg_fertility')}</span>}
+          </div>
+        ))}
+        {filtered.length === 0 && <p className="muted">—</p>}
       </div>
     </div>
   )

@@ -1,13 +1,25 @@
 import React, { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { useLang } from '../i18n.jsx'
+import { COUNTRIES } from '../countries.js'
+
+function EyeButton({ shown, onClick }) {
+  return (
+    <button type="button" className="eye-btn" onClick={onClick} tabIndex={-1} aria-label="toggle">
+      {shown ? '🙈' : '👁️'}
+    </button>
+  )
+}
 
 export function LoginPage({ onSuccess, onSwitchPage, onBack }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [mode, setMode] = useState('login') // 'login' | 'reset'
+  const [resetSent, setResetSent] = useState(false)
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -18,13 +30,46 @@ export function LoginPage({ onSuccess, onSwitchPage, onBack }) {
     setLoading(false)
   }
 
+  const handleReset = async (e) => {
+    e.preventDefault()
+    setError(''); setLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin
+    })
+    if (error) setError(error.message)
+    else setResetSent(true)
+    setLoading(false)
+  }
+
   const handleGoogle = async () => {
     setError('')
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin }
+      provider: 'google', options: { redirectTo: window.location.origin }
     })
     if (error) setError(t('auth_google_off'))
+  }
+
+  if (mode === 'reset') {
+    return (
+      <div className="auth-screen">
+        <div className="auth-card">
+          <img src="/logo.png" alt="" className="auth-logo" />
+          <h2 className="auth-title">{t('auth_reset_title')}</h2>
+          <p className="auth-sub">{t('auth_reset_sub')}</p>
+          {resetSent ? (
+            <div className="auth-ok">{t('auth_reset_sent')}</div>
+          ) : (
+            <form onSubmit={handleReset} className="auth-form">
+              <input className="auth-input" type="email" value={email}
+                onChange={e => setEmail(e.target.value)} placeholder={t('auth_email')} required />
+              {error && <div className="auth-error">{error}</div>}
+              <button type="submit" className="btn-primary full" disabled={loading}>{t('auth_reset_btn')}</button>
+            </form>
+          )}
+          <button className="auth-back" onClick={() => { setMode('login'); setResetSent(false); setError('') }}>{t('auth_back')}</button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -40,8 +85,15 @@ export function LoginPage({ onSuccess, onSwitchPage, onBack }) {
             onChange={e => setEmail(e.target.value)} placeholder="your@email.com" required />
 
           <label className="auth-label">{t('auth_password')}</label>
-          <input className="auth-input" type="password" value={password}
-            onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+          <div className="pw-wrap">
+            <input className="auth-input" type={showPw ? 'text' : 'password'} value={password}
+              onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+            <EyeButton shown={showPw} onClick={() => setShowPw(s => !s)} />
+          </div>
+
+          <button type="button" className="auth-forgot" onClick={() => { setMode('reset'); setError('') }}>
+            {t('auth_forgot')}
+          </button>
 
           {error && <div className="auth-error">{error}</div>}
 
@@ -49,13 +101,6 @@ export function LoginPage({ onSuccess, onSwitchPage, onBack }) {
             {loading ? t('auth_login_loading') : t('auth_login_btn')}
           </button>
         </form>
-
-        <div className="auth-divider"><span>{t('auth_or')}</span></div>
-
-        <button className="btn-google" onClick={handleGoogle}>
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.5-2.1 14.3-5.6l-6.6-5.6C29.6 34.5 26.9 35.5 24 35.5c-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.4l6.6 5.6C41.9 35.8 44 30.3 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg>
-          {t('auth_google')}
-        </button>
 
         <p className="auth-switch">
           {t('auth_no_account')}{' '}
@@ -68,12 +113,14 @@ export function LoginPage({ onSuccess, onSwitchPage, onBack }) {
 }
 
 export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
-  const { t } = useLang()
+  const { t, lang } = useLang()
   const [f, setF] = useState({
-    email: '', password: '', fullName: '', specialty: '',
-    hospital: '', passportNumber: '', nationality: '',
-    yearsOfExperience: '', fertilitySpecialist: false
+    email: '', password: '', passwordConfirm: '', fullName: '', profession: 'doctor',
+    specialty: '', hospital: '', clinicAddress: '', phone: '',
+    passportNumber: '', nationality: '', yearsOfExperience: '', fertilitySpecialist: false
   })
+  const [showPw, setShowPw] = useState(false)
+  const [showPw2, setShowPw2] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -85,17 +132,20 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
 
   const handleRegister = async (e) => {
     e.preventDefault()
-    setError(''); setLoading(true)
-    const { data, error: authErr } = await supabase.auth.signUp({
-      email: f.email, password: f.password
-    })
+    setError('')
+    if (f.password !== f.passwordConfirm) { setError(t('auth_password_mismatch')); return }
+    setLoading(true)
+    const { data, error: authErr } = await supabase.auth.signUp({ email: f.email, password: f.password })
     if (authErr) { setError(authErr.message); setLoading(false); return }
 
     const { error: pErr } = await supabase.from('doctors').insert([{
       user_id: data.user.id,
       full_name: f.fullName,
+      profession: f.profession,
       specialty: f.specialty,
       hospital: f.hospital,
+      clinic_address: f.clinicAddress,
+      phone: f.phone,
       email: f.email,
       passport_number: f.passportNumber,
       nationality: f.nationality,
@@ -128,12 +178,39 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
 
         <form onSubmit={handleRegister} className="auth-form scroll">
           <input className="auth-input" name="fullName" placeholder={t('reg_name')} value={f.fullName} onChange={ch} required />
+
+          <select className="auth-input" name="profession" value={f.profession} onChange={ch}>
+            <option value="doctor">{t('prof_doctor')}</option>
+            <option value="pharmacist">{t('prof_pharmacist')}</option>
+            <option value="medical">{t('prof_medical')}</option>
+          </select>
+
           <input className="auth-input" name="email" type="email" placeholder={t('auth_email')} value={f.email} onChange={ch} required />
-          <input className="auth-input" name="password" type="password" placeholder={t('auth_password')} value={f.password} onChange={ch} required />
+
+          <div className="pw-wrap">
+            <input className="auth-input" name="password" type={showPw ? 'text' : 'password'} placeholder={t('auth_password')} value={f.password} onChange={ch} required />
+            <EyeButton shown={showPw} onClick={() => setShowPw(s => !s)} />
+          </div>
+          <div className="pw-wrap">
+            <input className="auth-input" name="passwordConfirm" type={showPw2 ? 'text' : 'password'} placeholder={t('auth_password_confirm')} value={f.passwordConfirm} onChange={ch} required />
+            <EyeButton shown={showPw2} onClick={() => setShowPw2(s => !s)} />
+          </div>
+
           <input className="auth-input" name="specialty" placeholder={t('reg_specialty')} value={f.specialty} onChange={ch} required />
           <input className="auth-input" name="hospital" placeholder={t('reg_hospital')} value={f.hospital} onChange={ch} required />
+          <input className="auth-input" name="clinicAddress" placeholder={t('reg_clinic')} value={f.clinicAddress} onChange={ch} />
+          <input className="auth-input" name="phone" type="tel" placeholder={t('reg_phone')} value={f.phone} onChange={ch} />
           <input className="auth-input" name="passportNumber" placeholder={t('reg_passport')} value={f.passportNumber} onChange={ch} required />
-          <input className="auth-input" name="nationality" placeholder={t('reg_nationality')} value={f.nationality} onChange={ch} required />
+
+          <select className="auth-input" name="nationality" value={f.nationality} onChange={ch} required>
+            <option value="">{t('reg_nationality')}</option>
+            {COUNTRIES.map(c => (
+              <option key={c.code} value={lang === 'ar' ? c.ar : c.en}>
+                {c.flag} {lang === 'ar' ? c.ar : c.en}
+              </option>
+            ))}
+          </select>
+
           <input className="auth-input" name="yearsOfExperience" type="number" placeholder={t('reg_years')} value={f.yearsOfExperience} onChange={ch} />
           <label className="auth-check">
             <input type="checkbox" name="fertilitySpecialist" checked={f.fertilitySpecialist} onChange={ch} />

@@ -13,6 +13,7 @@ export default function AdminDashboard() {
   const [pendingDoctors, setPendingDoctors] = useState([])
   const [invitationRequests, setInvitationRequests] = useState([])
   const [certRequests, setCertRequests] = useState([])
+  const [memberActivities, setMemberActivities] = useState([])
 
   // doctor search/filter
   const [search, setSearch] = useState('')
@@ -34,7 +35,7 @@ export default function AdminDashboard() {
 
   useEffect(() => { refreshAll() }, [])
 
-  const refreshAll = () => { fetchDoctors(); fetchConferences(); fetchInvitations(); fetchReports(); fetchPending(); fetchInvitationRequests(); fetchCertRequests() }
+  const refreshAll = () => { fetchDoctors(); fetchConferences(); fetchInvitations(); fetchReports(); fetchPending(); fetchInvitationRequests(); fetchCertRequests(); fetchMemberActivities() }
   const fetchDoctors = async () => { const { data } = await supabase.from('doctors').select('*').order('created_at', { ascending: false }); setDoctors(data || []) }
   const fetchConferences = async () => { const { data } = await supabase.from('conferences').select('*'); setConferences(data || []) }
   const fetchInvitations = async () => { const { data } = await supabase.from('invitations').select('*').order('created_at', { ascending: false }); setInvitations(data || []) }
@@ -42,6 +43,7 @@ export default function AdminDashboard() {
   const fetchPending = async () => { const { data } = await supabase.from('doctors').select('*').eq('status', 'pending'); setPendingDoctors(data || []) }
   const fetchInvitationRequests = async () => { const { data } = await supabase.from('invitation_requests').select('*').order('created_at', { ascending: false }); setInvitationRequests(data || []) }
   const fetchCertRequests = async () => { const { data } = await supabase.from('certificate_requests').select('*, doctors(full_name, email)').order('created_at', { ascending: false }); setCertRequests(data || []) }
+  const fetchMemberActivities = async () => { const { data } = await supabase.from('member_activities').select('*').order('created_at', { ascending: false }); setMemberActivities(data || []) }
 
   // ---------- filters ----------
   const countries = [...new Set(doctors.map(d => d.nationality).filter(Boolean))]
@@ -192,6 +194,7 @@ export default function AdminDashboard() {
   const approveDoctor = async (id) => { await supabase.from('doctors').update({ status: 'approved' }).eq('id', id); fetchPending(); fetchDoctors() }
   const rejectDoctor = async (id) => { if (confirm('Reject this membership?')) { await supabase.from('doctors').update({ status: 'rejected' }).eq('id', id); fetchPending() } }
   const approveCert = async (id) => { await supabase.from('certificate_requests').update({ status: 'approved', issued_date: new Date().toISOString().split('T')[0] }).eq('id', id); fetchCertRequests() }
+  const deleteActivity = async (id) => { if (confirm('Delete this activity?')) { await supabase.from('member_activities').delete().eq('id', id); fetchMemberActivities() } }
 
   return (
     <div className="admin">
@@ -208,6 +211,7 @@ export default function AdminDashboard() {
         <button className={tab === 'pending' ? 'atab active' : 'atab'} onClick={() => setTab('pending')}>Pending{pendingDoctors.length ? ` (${pendingDoctors.length})` : ''}</button>
         <button className={tab === 'inv-requests' ? 'atab active' : 'atab'} onClick={() => setTab('inv-requests')}>Inv. Requests{invitationRequests.length ? ` (${invitationRequests.length})` : ''}</button>
         <button className={tab === 'cert-requests' ? 'atab active' : 'atab'} onClick={() => setTab('cert-requests')}>Certificates{certRequests.length ? ` (${certRequests.length})` : ''}</button>
+        <button className={tab === 'activities' ? 'atab active' : 'atab'} onClick={() => setTab('activities')}>Member Activities</button>
       </div>
 
       {/* OVERVIEW */}
@@ -473,6 +477,26 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* MEMBER ACTIVITIES */}
+      {tab === 'activities' && (
+        <div className="panel">
+          <h3>Member Activities</h3>
+          <div className="card-grid">
+            {memberActivities.map(a => (
+              <div key={a.id} className="event-card">
+                {a.image_url && <img src={a.image_url} alt={a.title} style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: '.6rem' }} />}
+                <h3>{a.title}</h3>
+                <p className="muted" style={{ fontSize: '.85rem' }}>By: {a.doctor_name}</p>
+                <p style={{ fontSize: '.9rem', margin: '.4rem 0' }}>{a.description}</p>
+                <button className="mini danger" onClick={() => deleteActivity(a.id)}>Delete</button>
+              </div>
+            ))}
+            {memberActivities.length === 0 && <p className="muted">No activities posted yet.</p>}
+          </div>
+        </div>
+      )}
+
 
       {/* VIEW FILES MODAL */}
       {viewDoctor && (

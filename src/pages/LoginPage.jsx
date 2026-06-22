@@ -3,6 +3,20 @@ import { supabase } from '../supabaseClient'
 import { useLang } from '../i18n.jsx'
 import { COUNTRIES } from '../countries.js'
 
+
+function getPasswordStrength(pw) {
+  if (!pw) return { level: 0, label: '', color: '' }
+  let score = 0
+  if (pw.length >= 8) score++
+  if (pw.length >= 12) score++
+  if (/[A-Z]/.test(pw)) score++
+  if (/[0-9]/.test(pw)) score++
+  if (/[^A-Za-z0-9]/.test(pw)) score++
+  if (score <= 1) return { level: 1, label: 'Weak', color: '#e74c3c' }
+  if (score <= 3) return { level: 2, label: 'Medium', color: '#f39c12' }
+  return { level: 3, label: 'Strong', color: '#27ae60' }
+}
+
 function EyeButton({ shown, onClick }) {
   return (
     <button type="button" className="eye-btn" onClick={onClick} tabIndex={-1}>
@@ -198,9 +212,20 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
 
           <div className="pw-wrap">
             <input className="auth-input" name="password" type={showPw ? 'text' : 'password'}
-              placeholder="Password *" value={f.password} onChange={ch} required />
+              placeholder="Password * (min. 8 characters)" value={f.password} onChange={ch} required minLength={8} />
             <EyeButton shown={showPw} onClick={() => setShowPw(s => !s)} />
           </div>
+          {f.password && (() => {
+            const s = getPasswordStrength(f.password)
+            return (
+              <div className="pw-strength">
+                <div className="pw-strength-bar">
+                  <div style={{ width: s.level === 1 ? '33%' : s.level === 2 ? '66%' : '100%', background: s.color, height: '100%', borderRadius: 4, transition: 'all .3s' }} />
+                </div>
+                <span style={{ color: s.color, fontSize: '.82rem', fontWeight: 700 }}>{s.label}</span>
+              </div>
+            )
+          })()}
           <div className="pw-wrap">
             <input className="auth-input" name="passwordConfirm" type={showPw2 ? 'text' : 'password'}
               placeholder="Confirm Password *" value={f.passwordConfirm} onChange={ch} required />

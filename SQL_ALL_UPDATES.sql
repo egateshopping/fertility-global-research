@@ -54,3 +54,15 @@ CREATE TABLE IF NOT EXISTS certificate_requests (
   created_at TIMESTAMP DEFAULT NOW()
 );
 ALTER TABLE certificate_requests DISABLE ROW LEVEL SECURITY;
+
+-- 6) Member activities table
+CREATE TABLE IF NOT EXISTS member_activities (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  doctor_id UUID REFERENCES doctors(id) ON DELETE CASCADE,
+  doctor_name TEXT,
+  title TEXT NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+ALTER TABLE member_activities DISABLE ROW LEVEL SECURITY;

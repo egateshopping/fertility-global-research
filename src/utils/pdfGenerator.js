@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf'
 
-// Load an image URL as base64 for jsPDF
+// Load logo with white background
 const loadImageAsBase64 = (url) =>
   new Promise((resolve) => {
     const img = new Image()
@@ -19,180 +19,224 @@ const loadImageAsBase64 = (url) =>
     img.src = url
   })
 
+// Load signature with TRANSPARENT background (removes grey/white)
+const loadSignatureTransparent = (url) =>
+  new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      const data = imageData.data
+      // Make light pixels (grey/white background) transparent
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2]
+        const brightness = (r + g + b) / 3
+        if (brightness > 180) {
+          data[i + 3] = 0 // fully transparent
+        }
+      }
+      ctx.putImageData(imageData, 0, 0)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = () => resolve(null)
+    img.src = url
+  })
+
 export const generateInvitationPDF = async (doctor, conference, invitation) => {
   const pdf = new jsPDF('p', 'mm', 'a4')
 
-  const teal   = [26, 143, 168]
   const navy   = [11, 46, 92]
+  const teal   = [26, 143, 168]
   const white  = [255, 255, 255]
-  const black  = [0, 0, 0]
+  const black  = [30, 30, 30]
   const grey   = [100, 100, 100]
+  const sky    = [235, 247, 252]
 
-  // ── HEADER BAND ──────────────────────────────────────────────────────────
+  // ── HEADER ───────────────────────────────────────────────────────────────
   pdf.setFillColor(...navy)
-  pdf.rect(0, 0, 210, 42, 'F')
+  pdf.rect(0, 0, 210, 38, 'F')
   pdf.setFillColor(...teal)
-  pdf.rect(0, 38, 210, 4, 'F')
+  pdf.rect(0, 35, 210, 3, 'F')
 
-  // Logo (top-left)
   try {
     const logoB64 = await loadImageAsBase64('/logo.png')
-    if (logoB64) pdf.addImage(logoB64, 'PNG', 12, 5, 28, 28)
+    if (logoB64) pdf.addImage(logoB64, 'PNG', 10, 4, 28, 28)
   } catch (_) {}
 
   pdf.setTextColor(...white)
   pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(15)
-  pdf.text('FERTILITY GLOBAL RESEARCH', 44, 17)
+  pdf.setFontSize(14)
+  pdf.text('FERTILITY GLOBAL RESEARCH', 42, 16)
   pdf.setFont('Helvetica', 'normal')
-  pdf.setFontSize(9)
-  pdf.text('Advancing Fertility Science Worldwide', 44, 24)
-  pdf.setFontSize(8)
-  pdf.text('London, United Kingdom  |  contact@fertility-global.org', 44, 30)
+  pdf.setFontSize(8.5)
+  pdf.text('Advancing Fertility Science Worldwide', 42, 22)
+  pdf.text('London, United Kingdom  |  fertility-global.org', 42, 28)
 
-  // ── INVITATION TITLE ─────────────────────────────────────────────────────
+  // ── TITLE ─────────────────────────────────────────────────────────────────
   pdf.setTextColor(...navy)
   pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(14)
-  pdf.text('INVITATION LETTER', 105, 54, { align: 'center' })
+  pdf.setFontSize(15)
+  pdf.text('INVITATION LETTER', 105, 50, { align: 'center' })
   pdf.setDrawColor(...teal)
-  pdf.setLineWidth(0.6)
-  pdf.line(20, 57, 190, 57)
+  pdf.setLineWidth(0.7)
+  pdf.line(20, 53, 190, 53)
 
-  // ── META ROW ─────────────────────────────────────────────────────────────
+  // ── META ──────────────────────────────────────────────────────────────────
   pdf.setTextColor(...grey)
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(8)
-  pdf.text(`Invitation No: ${invitation.invitation_number}`, 20, 63)
-  pdf.text(`Issue Date: ${invitation.issue_date}`, 105, 63, { align: 'center' })
-  pdf.text(`Travel Date: ${invitation.travel_date || '—'}`, 190, 63, { align: 'right' })
-
-  pdf.setDrawColor(220, 220, 220)
+  pdf.text(`Invitation No: ${invitation.invitation_number}`, 20, 59)
+  pdf.text(`Issue Date: ${invitation.issue_date}`, 105, 59, { align: 'center' })
+  pdf.text(`Travel Date: ${invitation.travel_date || '—'}`, 190, 59, { align: 'right' })
+  pdf.setDrawColor(210, 210, 210)
   pdf.setLineWidth(0.3)
-  pdf.line(20, 66, 190, 66)
+  pdf.line(20, 62, 190, 62)
 
-  // ── TO / FROM ────────────────────────────────────────────────────────────
-  let y = 74
+  let y = 70
 
-  // TO block
-  pdf.setTextColor(...navy)
+  // ── TO / FROM TWO-COLUMN ─────────────────────────────────────────────────
+  // TO block (left)
   pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(9)
+  pdf.setFontSize(8.5)
+  pdf.setTextColor(...teal)
   pdf.text('TO:', 20, y)
 
-  pdf.setFont('Helvetica', 'normal')
-  pdf.setTextColor(...black)
   const toLines = [
-    `Dr. ${doctor.full_name}`,
-    `Passport No.: ${doctor.passport_number}`,
-    `Specialty: ${doctor.specialty}`,
-    `Hospital: ${doctor.hospital}`,
-    `Nationality: ${doctor.nationality}`,
+    ['Full Name:', `Dr. ${doctor.full_name}`],
+    ['Passport No.:', doctor.passport_number || '—'],
+    ['Syndicate ID:', doctor.syndicate_id || '—'],
+    ['Specialty:', doctor.specialty || '—'],
+    ['Hospital:', doctor.hospital || '—'],
+    ['Nationality:', doctor.nationality || '—'],
+    ['City:', `${doctor.city || '—'}${doctor.governorate ? ', ' + doctor.governorate : ''}`],
   ]
-  toLines.forEach((line, i) => {
-    pdf.setFontSize(i === 0 ? 10 : 9)
-    if (i === 0) pdf.setFont('Helvetica', 'bold')
-    else pdf.setFont('Helvetica', 'normal')
-    pdf.text(line, 30, y + 7 + i * 6)
+
+  toLines.forEach(([label, value], i) => {
+    pdf.setFont('Helvetica', 'bold')
+    pdf.setFontSize(8)
+    pdf.setTextColor(...grey)
+    pdf.text(label, 20, y + 7 + i * 6)
+    pdf.setFont('Helvetica', 'normal')
+    pdf.setTextColor(...black)
+    pdf.text(value, 52, y + 7 + i * 6)
   })
 
-  // FROM block (right column)
+  // FROM block (right)
   pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(9)
-  pdf.setTextColor(...navy)
+  pdf.setFontSize(8.5)
+  pdf.setTextColor(...teal)
   pdf.text('FROM:', 115, y)
-  pdf.setFont('Helvetica', 'normal')
-  pdf.setTextColor(...black)
+
   const fromLines = [
-    'Fertility Global Research',
-    'London, United Kingdom',
-    'contact@fertility-global.org',
-    'fertility-global.org',
+    ['Organization:', 'Fertility Global Research'],
+    ['Address:', 'London, United Kingdom'],
+    ['Email:', 'contact@fertility-global.org'],
+    ['Website:', 'fertility-global.org'],
   ]
-  fromLines.forEach((line, i) => {
-    pdf.setFontSize(i === 0 ? 10 : 9)
-    if (i === 0) pdf.setFont('Helvetica', 'bold')
-    else pdf.setFont('Helvetica', 'normal')
-    pdf.text(line, 125, y + 7 + i * 6)
+
+  fromLines.forEach(([label, value], i) => {
+    pdf.setFont('Helvetica', 'bold')
+    pdf.setFontSize(8)
+    pdf.setTextColor(...grey)
+    pdf.text(label, 115, y + 7 + i * 6)
+    pdf.setFont('Helvetica', 'normal')
+    pdf.setTextColor(...black)
+    pdf.text(value, 142, y + 7 + i * 6)
   })
 
-  y += 44
+  y += 52
 
-  pdf.setDrawColor(220, 220, 220)
+  pdf.setDrawColor(210, 210, 210)
+  pdf.setLineWidth(0.3)
   pdf.line(20, y, 190, y)
   y += 8
 
-  // ── SUBJECT ──────────────────────────────────────────────────────────────
-  pdf.setFillColor(240, 248, 252)
-  pdf.roundedRect(20, y - 4, 170, 10, 2, 2, 'F')
-  pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(9.5)
-  pdf.setTextColor(...navy)
-  pdf.text(`RE: Invitation to attend — ${conference.title}`, 25, y + 3)
-  y += 14
+  // ── CONFERENCE HIGHLIGHT BOX ──────────────────────────────────────────────
+  pdf.setFillColor(...sky)
+  pdf.roundedRect(20, y - 3, 170, 22, 3, 3, 'F')
+  pdf.setDrawColor(...teal)
+  pdf.setLineWidth(0.5)
+  pdf.roundedRect(20, y - 3, 170, 22, 3, 3, 'S')
 
-  // ── BODY ─────────────────────────────────────────────────────────────────
+  pdf.setFont('Helvetica', 'bold')
+  pdf.setFontSize(9)
+  pdf.setTextColor(...navy)
+  pdf.text('RE:', 25, y + 5)
+  pdf.setFont('Helvetica', 'bold')
+  pdf.text(`Invitation to Attend — ${conference.title}`, 33, y + 5)
+  pdf.setFont('Helvetica', 'normal')
+  pdf.setFontSize(8.5)
+  pdf.setTextColor(...grey)
+  pdf.text(`📍 ${conference.location}`, 25, y + 12)
+  pdf.text(`📅 ${conference.start_date}${conference.end_date ? ' — ' + conference.end_date : ''}`, 110, y + 12)
+  y += 28
+
+  // ── BODY ──────────────────────────────────────────────────────────────────
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(10)
   pdf.setTextColor(...black)
 
-  const bodyParagraphs = [
+  const body = [
     `Dear Dr. ${doctor.full_name},`,
     '',
-    `We are pleased and honoured to invite you to attend and participate in the upcoming event organised by Fertility Global Research:`,
+    `We are pleased and honoured to invite you on behalf of Fertility Global Research to attend and participate in the above-mentioned conference.`,
     '',
-    `    ${conference.title}`,
-    `    ${conference.location}`,
-    `    ${conference.start_date}${conference.end_date ? ' — ' + conference.end_date : ''}`,
+    `The programme will include scientific presentations on the latest advances in fertility medicine and reproductive science, along with workshops on medical education, research, and best practice.`,
     '',
-    `The conference programme will include scientific presentations covering recent advances in fertility medicine and reproductive science, as well as workshops on medical education, training, and best practice.`,
+    `We believe your expertise as a specialist in ${doctor.specialty || 'your field'} will be a valued contribution to the scientific programme. Your participation will help advance knowledge and professional practice in this important area of medicine.`,
     '',
-    `Your expertise and participation would be a valuable contribution to the scientific programme. We look forward to welcoming you.`,
+    `This invitation is issued for the purpose of facilitating your visa application and conference attendance only. Fertility Global Research does not bear responsibility for any visa decisions made by the relevant authorities.`,
+    '',
+    `We look forward to welcoming you at the conference.`,
     '',
     `Yours sincerely,`,
   ]
 
-  bodyParagraphs.forEach(line => {
-    if (y > 250) { pdf.addPage(); y = 20 }
-    if (line === '') { y += 4; return }
+  body.forEach(line => {
+    if (y > 255) { pdf.addPage(); y = 20 }
+    if (line === '') { y += 3; return }
     const wrapped = pdf.splitTextToSize(line, 170)
     wrapped.forEach(wl => {
       pdf.text(wl, 20, y)
-      y += 6
+      y += 5.5
     })
   })
 
-  y += 4
+  y += 5
 
-  // ── SIGNATURE ────────────────────────────────────────────────────────────
-  if (y > 230) { pdf.addPage(); y = 20 }
+  // ── SIGNATURE ─────────────────────────────────────────────────────────────
+  if (y > 240) { pdf.addPage(); y = 20 }
 
   try {
-    const sigB64 = await loadImageAsBase64('/signature.jpg')
+    const sigB64 = await loadSignatureTransparent('/signature.jpg')
     if (sigB64) {
-      // Draw signature image (keep aspect; width 50mm)
-      pdf.addImage(sigB64, 'JPEG', 20, y, 50, 22)
+      pdf.addImage(sigB64, 'PNG', 20, y, 52, 22)
       y += 26
     }
-  } catch (_) { y += 10 }
+  } catch (_) { y += 8 }
 
   pdf.setFont('Helvetica', 'bold')
   pdf.setFontSize(10)
   pdf.setTextColor(...navy)
   pdf.text('Mohammed Khayyat', 20, y)
-  y += 6
+  y += 5
   pdf.setFont('Helvetica', 'normal')
-  pdf.setFontSize(9)
+  pdf.setFontSize(8.5)
   pdf.setTextColor(...grey)
-  pdf.text('President', 20, y)
-  y += 5
-  pdf.text('Fertility Global Research', 20, y)
-  y += 5
+  pdf.text('President', 20, y); y += 4.5
+  pdf.text('Fertility Global Research', 20, y); y += 4.5
   pdf.text('London, United Kingdom', 20, y)
 
-  // ── FOOTER BAND ──────────────────────────────────────────────────────────
+  // ── FOOTER ────────────────────────────────────────────────────────────────
   pdf.setFillColor(...navy)
   pdf.rect(0, 282, 210, 15, 'F')
+  pdf.setFillColor(...teal)
+  pdf.rect(0, 280, 210, 2, 'F')
   pdf.setTextColor(...white)
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(7.5)

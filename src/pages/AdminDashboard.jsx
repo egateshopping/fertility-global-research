@@ -71,9 +71,10 @@ export default function AdminDashboard() {
   // ---------- doctor edit/delete ----------
   const saveDoctor = async (e) => {
     e.preventDefault()
-    const { id, full_name, specialty, hospital, nationality, passport_number, years_of_experience, email } = editDoctor
+    const { id, full_name, specialty, hospital, nationality, passport_number, years_of_experience, email, syndicate_id, city, governorate } = editDoctor
     const { error } = await supabase.from('doctors').update({
       full_name, specialty, hospital, nationality, passport_number,
+      syndicate_id, city, governorate,
       years_of_experience: years_of_experience ? parseInt(years_of_experience) : null, email
     }).eq('id', id)
     if (!error) { setEditDoctor(null); fetchDoctors() } else alert(error.message)
@@ -324,11 +325,11 @@ export default function AdminDashboard() {
               <p className="muted">رقم الدعوة: <strong>{inv.number}</strong> (يمكن تعديله)</p>
               <input className="auth-input" value={inv.number} onChange={e => setInv({ ...inv, number: e.target.value })} placeholder="رقم الدعوة" />
               <div className="two-col">
-                <input className="auth-input" value={invDoctorEdit.full_name} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, full_name: e.target.value })} placeholder="الاسم" />
-                <input className="auth-input" value={invDoctorEdit.passport_number} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, passport_number: e.target.value })} placeholder="الجواز" />
-                <input className="auth-input" value={invDoctorEdit.specialty} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, specialty: e.target.value })} placeholder="التخصص" />
-                <input className="auth-input" value={invDoctorEdit.hospital} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, hospital: e.target.value })} placeholder="المستشفى" />
-                <input className="auth-input" value={invDoctorEdit.nationality} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, nationality: e.target.value })} placeholder="الجنسية" />
+                <input className="auth-input" value={invDoctorEdit.full_name} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, full_name: e.target.value })} placeholder="Full Name" />
+                <input className="auth-input" value={invDoctorEdit.passport_number} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, passport_number: e.target.value })} placeholder="Passport No." />
+                <input className="auth-input" value={invDoctorEdit.specialty} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, specialty: e.target.value })} placeholder="Specialty" />
+                <input className="auth-input" value={invDoctorEdit.hospital} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, hospital: e.target.value })} placeholder="Hospital" />
+                <input className="auth-input" value={invDoctorEdit.nationality} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, nationality: e.target.value })} placeholder="Nationality" />
               </div>
               <button className="btn-primary full" onClick={confirmIssue}>إصدار الدعوة وتنزيل PDF</button>
             </div>
@@ -413,11 +414,14 @@ export default function AdminDashboard() {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h3>تعديل بيانات الطبيب</h3>
             <form onSubmit={saveDoctor} className="auth-form">
-              <input className="auth-input" value={editDoctor.full_name || ''} onChange={e => setEditDoctor({ ...editDoctor, full_name: e.target.value })} placeholder="الاسم" />
-              <input className="auth-input" value={editDoctor.specialty || ''} onChange={e => setEditDoctor({ ...editDoctor, specialty: e.target.value })} placeholder="التخصص" />
-              <input className="auth-input" value={editDoctor.hospital || ''} onChange={e => setEditDoctor({ ...editDoctor, hospital: e.target.value })} placeholder="المستشفى" />
-              <input className="auth-input" value={editDoctor.passport_number || ''} onChange={e => setEditDoctor({ ...editDoctor, passport_number: e.target.value })} placeholder="الجواز" />
-              <input className="auth-input" value={editDoctor.nationality || ''} onChange={e => setEditDoctor({ ...editDoctor, nationality: e.target.value })} placeholder="الجنسية" />
+              <input className="auth-input" value={editDoctor.full_name || ''} onChange={e => setEditDoctor({ ...editDoctor, full_name: e.target.value })} placeholder="Full Name" />
+              <input className="auth-input" value={editDoctor.specialty || ''} onChange={e => setEditDoctor({ ...editDoctor, specialty: e.target.value })} placeholder="Specialty" />
+              <input className="auth-input" value={editDoctor.hospital || ''} onChange={e => setEditDoctor({ ...editDoctor, hospital: e.target.value })} placeholder="Hospital" />
+              <input className="auth-input" value={editDoctor.passport_number || ''} onChange={e => setEditDoctor({ ...editDoctor, passport_number: e.target.value })} placeholder="Passport No." />
+              <input className="auth-input" value={editDoctor.syndicate_id || ''} onChange={e => setEditDoctor({ ...editDoctor, syndicate_id: e.target.value })} placeholder="Syndicate ID" />
+              <input className="auth-input" value={editDoctor.nationality || ''} onChange={e => setEditDoctor({ ...editDoctor, nationality: e.target.value })} placeholder="Nationality" />
+              <input className="auth-input" value={editDoctor.city || ''} onChange={e => setEditDoctor({ ...editDoctor, city: e.target.value })} placeholder="City" />
+              <input className="auth-input" value={editDoctor.governorate || ''} onChange={e => setEditDoctor({ ...editDoctor, governorate: e.target.value })} placeholder="Governorate" />
               <input className="auth-input" type="number" value={editDoctor.years_of_experience || ''} onChange={e => setEditDoctor({ ...editDoctor, years_of_experience: e.target.value })} placeholder="سنوات الخبرة" />
               <div className="two-col">
                 <button className="btn-primary" type="submit">حفظ</button>

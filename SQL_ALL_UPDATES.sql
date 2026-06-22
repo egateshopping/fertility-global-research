@@ -3,11 +3,14 @@
 -- Run ONCE in Supabase → SQL Editor → New Query
 -- ============================================
 
--- 1) New columns on doctors table
+-- 1) Doctors table - all new columns
 ALTER TABLE doctors ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE doctors ADD COLUMN IF NOT EXISTS clinic_address TEXT;
 ALTER TABLE doctors ADD COLUMN IF NOT EXISTS profession TEXT DEFAULT 'doctor';
 ALTER TABLE doctors ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS syndicate_id TEXT;
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS city TEXT;
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS governorate TEXT;
 -- profession values: 'doctor' | 'pharmacist' | 'medical'
 
 -- 2) Reports table

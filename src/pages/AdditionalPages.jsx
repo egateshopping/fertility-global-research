@@ -47,6 +47,9 @@ export function DoctorDirectory({ profession = 'doctor' }) {
             <p className="muted">{d.specialty}</p>
             <p className="muted">🏥 {d.hospital}</p>
             <p className="muted">🌍 {d.nationality}</p>
+            {(d.city || d.governorate) && (
+              <p className="muted">📍 {[d.city, d.governorate].filter(Boolean).join(', ')}</p>
+            )}
             {d.fertility_specialist && <span className="news-cat" style={{ marginTop: '.5rem', display: 'inline-block' }}>{t('reg_fertility')}</span>}
           </div>
         ))}

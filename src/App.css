@@ -223,3 +223,9 @@ img{max-width:100%;display:block}
 .inv-btns{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:.5rem}
 .mini.admin-btn{background:#e8f7ee;color:#1a7a4f}
 .mini.admin-btn:hover{background:#1a7a4f;color:#fff}
+
+/* Registration sections and terms */
+.reg-section{font-family:'Cairo',sans-serif;font-weight:700;color:var(--navy);font-size:.9rem;border-bottom:2px solid var(--teal);padding-bottom:.3rem;margin-top:.5rem}
+.terms-box{background:var(--sky);border-radius:10px;padding:1rem;border:1px solid var(--line)}
+.terms-check{align-items:flex-start;gap:.7rem}
+.terms-check span{font-size:.85rem;color:var(--ink);line-height:1.5}

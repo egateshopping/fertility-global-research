@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { generateInvitationPDF } from '../utils/pdfGenerator'
+import CertificateRequest from './CertificateRequest'
 
 export default function DoctorDashboard({ doctor }) {
   const [profileData, setProfileData] = useState(doctor || {})
@@ -181,6 +182,8 @@ export default function DoctorDashboard({ doctor }) {
           </div>
         )}
       </div>
+
+      <CertificateRequest doctor={doctor} />
     </div>
   )
 }

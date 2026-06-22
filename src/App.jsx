@@ -8,10 +8,19 @@ import AboutPage from './pages/AboutPage'
 import NewsActivitiesPage from './pages/NewsActivitiesPage'
 import HomePage from './pages/HomePage'
 import ReportPage from './pages/ReportPage'
+import TermsPage from './pages/TermsPage'
+import InvitationRequestPage from './pages/InvitationRequestPage'
 import { useLang } from './i18n.jsx'
 import './App.css'
 
 const ADMIN_EMAILS = ['egate.shopping@gmail.com']
+const SOCIAL_LINKS = {
+  facebook: 'https://facebook.com/FertilityGlobalResearch',
+  linkedin: 'https://linkedin.com/company/fertility-global-research',
+  twitter: 'https://twitter.com/FGResearch',
+  instagram: 'https://instagram.com/fertilityglobalresearch',
+  whatsapp: 'https://wa.me/447512028322'
+}
 
 export default function App() {
   const { t, lang, toggle } = useLang()
@@ -22,6 +31,13 @@ export default function App() {
   const [doctor, setDoctor] = useState(null)
   const [authView, setAuthView] = useState(null)
   const [recovery, setRecovery] = useState(false)
+
+  // Handle internal navigation events (e.g. from terms link in register)
+  useEffect(() => {
+    const handler = (e) => goTo(e.detail)
+    window.addEventListener('goto', handler)
+    return () => window.removeEventListener('goto', handler)
+  }, [])
 
   useEffect(() => {
     checkUser()
@@ -74,6 +90,21 @@ export default function App() {
     setAuthView(null)
     setCurrentPage(page)
     window.scrollTo(0, 0)
+  }
+
+  // Show pending screen if member not yet approved
+  if (user && doctor && doctor.status === 'pending' && !isAdmin) {
+    return (
+      <div className="auth-screen">
+        <div className="auth-card center">
+          <img src="/logo.png" alt="" className="auth-logo" />
+          <h2 className="auth-title">Application Under Review</h2>
+          <p className="auth-sub">Your membership application is being reviewed by the association. You will be notified once approved.</p>
+          <div className="auth-ok" style={{marginTop:'1rem'}}>⏳ Pending Approval</div>
+          <button className="auth-back" style={{marginTop:'1.5rem'}} onClick={handleLogout}>Sign Out</button>
+        </div>
+      </div>
+    )
   }
 
   if (recovery) {
@@ -130,6 +161,7 @@ export default function App() {
               <button className={navCls(currentPage, 'admin')} onClick={() => goTo('admin')}>{t('nav_admin')}</button>
             )}
 
+            <button className={navCls(currentPage, 'request-invitation')} onClick={() => goTo('request-invitation')}>Request Invitation</button>
             <button className="lang-toggle" onClick={toggle}>{lang === 'ar' ? 'EN' : 'ع'}</button>
 
             {user ? (
@@ -150,6 +182,8 @@ export default function App() {
         {currentPage === 'dir_pharmacists' && <div className="page-wrap"><DoctorDirectory profession="pharmacist" /></div>}
         {currentPage === 'dir_medical' && <div className="page-wrap"><DoctorDirectory profession="medical" /></div>}
         {currentPage === 'report' && <div className="page-wrap"><ReportPage /></div>}
+        {currentPage === 'terms' && <div className="page-wrap"><TermsPage /></div>}
+        {currentPage === 'request-invitation' && <div className="page-wrap"><InvitationRequestPage /></div>}
         {currentPage === 'blog' && <div className="page-wrap"><BlogPage isAdmin={isAdmin} /></div>}
         {currentPage === 'dashboard' && user && !isAdmin && <div className="page-wrap"><DoctorDashboard doctor={doctor} /></div>}
         {currentPage === 'admin' && user && isAdmin && <div className="page-wrap"><AdminDashboard /></div>}
@@ -173,7 +207,16 @@ export default function App() {
             <button className="footer-link" onClick={() => goTo('conferences')}>{t('nav_conferences')}</button>
             <button className="footer-link" onClick={() => goTo('news')}>{t('nav_news')}</button>
             <button className="footer-link" onClick={() => goTo('report')}>{t('report_btn')}</button>
+            <button className="footer-link" onClick={() => goTo('terms')}>Terms & Conditions</button>
+            <button className="footer-link" onClick={() => goTo('request-invitation')}>Request Invitation</button>
           </div>
+        </div>
+        <div className="footer-social">
+          <a href={SOCIAL_LINKS.facebook} target="_blank" rel="noopener noreferrer" className="social-link">Facebook</a>
+          <a href={SOCIAL_LINKS.linkedin} target="_blank" rel="noopener noreferrer" className="social-link">LinkedIn</a>
+          <a href={SOCIAL_LINKS.twitter} target="_blank" rel="noopener noreferrer" className="social-link">X / Twitter</a>
+          <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" className="social-link">Instagram</a>
+          <a href={SOCIAL_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="social-link">WhatsApp</a>
         </div>
         <div className="footer-bottom">{t('foot_rights')}</div>
       </footer>

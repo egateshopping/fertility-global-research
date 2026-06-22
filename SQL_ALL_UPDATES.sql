@@ -23,3 +23,34 @@ CREATE TABLE IF NOT EXISTS reports (
   created_at TIMESTAMP DEFAULT NOW()
 );
 ALTER TABLE reports DISABLE ROW LEVEL SECURITY;
+
+-- 3) New columns for new features
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS date_of_birth DATE;
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS syndicate_join_date DATE;
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+-- status values: 'pending' | 'approved' | 'rejected'
+
+-- 4) Invitation requests table
+CREATE TABLE IF NOT EXISTS invitation_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  specialty TEXT,
+  passport_number TEXT,
+  conference_id UUID REFERENCES conferences(id),
+  message TEXT,
+  status TEXT DEFAULT 'new',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+ALTER TABLE invitation_requests DISABLE ROW LEVEL SECURITY;
+
+-- 5) Membership certificate requests
+CREATE TABLE IF NOT EXISTS certificate_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  doctor_id UUID REFERENCES doctors(id) ON DELETE CASCADE,
+  status TEXT DEFAULT 'pending',
+  issued_date DATE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+ALTER TABLE certificate_requests DISABLE ROW LEVEL SECURITY;

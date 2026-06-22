@@ -10,6 +10,9 @@ export default function AdminDashboard() {
   const [conferences, setConferences] = useState([])
   const [invitations, setInvitations] = useState([])
   const [reports, setReports] = useState([])
+  const [pendingDoctors, setPendingDoctors] = useState([])
+  const [invitationRequests, setInvitationRequests] = useState([])
+  const [certRequests, setCertRequests] = useState([])
 
   // doctor search/filter
   const [search, setSearch] = useState('')
@@ -31,11 +34,14 @@ export default function AdminDashboard() {
 
   useEffect(() => { refreshAll() }, [])
 
-  const refreshAll = () => { fetchDoctors(); fetchConferences(); fetchInvitations(); fetchReports() }
+  const refreshAll = () => { fetchDoctors(); fetchConferences(); fetchInvitations(); fetchReports(); fetchPending(); fetchInvitationRequests(); fetchCertRequests() }
   const fetchDoctors = async () => { const { data } = await supabase.from('doctors').select('*').order('created_at', { ascending: false }); setDoctors(data || []) }
   const fetchConferences = async () => { const { data } = await supabase.from('conferences').select('*'); setConferences(data || []) }
   const fetchInvitations = async () => { const { data } = await supabase.from('invitations').select('*').order('created_at', { ascending: false }); setInvitations(data || []) }
   const fetchReports = async () => { const { data } = await supabase.from('reports').select('*').order('created_at', { ascending: false }); setReports(data || []) }
+  const fetchPending = async () => { const { data } = await supabase.from('doctors').select('*').eq('status', 'pending'); setPendingDoctors(data || []) }
+  const fetchInvitationRequests = async () => { const { data } = await supabase.from('invitation_requests').select('*').order('created_at', { ascending: false }); setInvitationRequests(data || []) }
+  const fetchCertRequests = async () => { const { data } = await supabase.from('certificate_requests').select('*, doctors(full_name, email)').order('created_at', { ascending: false }); setCertRequests(data || []) }
 
   // ---------- filters ----------
   const countries = [...new Set(doctors.map(d => d.nationality).filter(Boolean))]
@@ -183,6 +189,9 @@ export default function AdminDashboard() {
   }
   const deleteInvitation = async (id) => { if (confirm('حذف هذه الدعوة؟')) { await supabase.from('invitations').delete().eq('id', id); fetchInvitations() } }
   const deleteReport = async (id) => { if (confirm('حذف هذا البلاغ؟')) { await supabase.from('reports').delete().eq('id', id); fetchReports() } }
+  const approveDoctor = async (id) => { await supabase.from('doctors').update({ status: 'approved' }).eq('id', id); fetchPending(); fetchDoctors() }
+  const rejectDoctor = async (id) => { if (confirm('Reject this membership?')) { await supabase.from('doctors').update({ status: 'rejected' }).eq('id', id); fetchPending() } }
+  const approveCert = async (id) => { await supabase.from('certificate_requests').update({ status: 'approved', issued_date: new Date().toISOString().split('T')[0] }).eq('id', id); fetchCertRequests() }
 
   return (
     <div className="admin">
@@ -196,6 +205,9 @@ export default function AdminDashboard() {
         <button className={tab === 'invite' ? 'atab active' : 'atab'} onClick={() => setTab('invite')}>إصدار دعوة</button>
         <button className={tab === 'invitations' ? 'atab active' : 'atab'} onClick={() => setTab('invitations')}>الدعوات</button>
         <button className={tab === 'reports' ? 'atab active' : 'atab'} onClick={() => setTab('reports')}>البلاغات{reports.length ? ` (${reports.length})` : ''}</button>
+        <button className={tab === 'pending' ? 'atab active' : 'atab'} onClick={() => setTab('pending')}>Pending{pendingDoctors.length ? ` (${pendingDoctors.length})` : ''}</button>
+        <button className={tab === 'inv-requests' ? 'atab active' : 'atab'} onClick={() => setTab('inv-requests')}>Inv. Requests{invitationRequests.length ? ` (${invitationRequests.length})` : ''}</button>
+        <button className={tab === 'cert-requests' ? 'atab active' : 'atab'} onClick={() => setTab('cert-requests')}>Certificates{certRequests.length ? ` (${certRequests.length})` : ''}</button>
       </div>
 
       {/* OVERVIEW */}
@@ -383,6 +395,79 @@ export default function AdminDashboard() {
                   </tr>
                 ))}
                 {reports.length === 0 && <tr><td colSpan="5" className="muted center-td">لا توجد بلاغات</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+
+      {/* PENDING APPROVALS */}
+      {tab === 'pending' && (
+        <div className="panel">
+          <h3>Pending Membership Approvals</h3>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Specialty</th><th>Country</th><th>Email</th><th>Actions</th></tr></thead>
+              <tbody>
+                {pendingDoctors.map(d => (
+                  <tr key={d.id}>
+                    <td>{d.full_name}</td><td>{d.specialty}</td><td>{d.nationality}</td><td>{d.email}</td>
+                    <td className="row-actions">
+                      <button className="mini admin-btn" onClick={() => approveDoctor(d.id)}>✅ Approve</button>
+                      <button className="mini danger" onClick={() => rejectDoctor(d.id)}>❌ Reject</button>
+                    </td>
+                  </tr>
+                ))}
+                {pendingDoctors.length === 0 && <tr><td colSpan="5" className="muted center-td">No pending approvals</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* INVITATION REQUESTS */}
+      {tab === 'inv-requests' && (
+        <div className="panel">
+          <h3>Invitation Requests from Visitors</h3>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Specialty</th><th>Passport</th><th>Date</th></tr></thead>
+              <tbody>
+                {invitationRequests.map(r => (
+                  <tr key={r.id}>
+                    <td>{r.full_name}</td><td>{r.email}</td><td>{r.specialty || '—'}</td>
+                    <td>{r.passport_number}</td><td>{(r.created_at || '').split('T')[0]}</td>
+                  </tr>
+                ))}
+                {invitationRequests.length === 0 && <tr><td colSpan="5" className="muted center-td">No requests</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* CERTIFICATE REQUESTS */}
+      {tab === 'cert-requests' && (
+        <div className="panel">
+          <h3>Membership Certificate Requests</h3>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Doctor</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+              <tbody>
+                {certRequests.map(r => (
+                  <tr key={r.id}>
+                    <td>{r.doctors?.full_name || '—'}</td>
+                    <td>{r.status}</td>
+                    <td>{(r.created_at || '').split('T')[0]}</td>
+                    <td>
+                      {r.status === 'pending' && (
+                        <button className="mini admin-btn" onClick={() => approveCert(r.id)}>✅ Approve</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {certRequests.length === 0 && <tr><td colSpan="4" className="muted center-td">No requests</td></tr>}
               </tbody>
             </table>
           </div>

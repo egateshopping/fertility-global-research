@@ -245,3 +245,15 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
 
   return pdf
 }
+
+// Generate QR code as base64 PNG
+export const generateQRCode = async (text) => {
+  try {
+    const QRCode = await import('qrcode')
+    const dataUrl = await QRCode.default.toDataURL(text, {
+      width: 120, margin: 1,
+      color: { dark: '#0B2E5C', light: '#FFFFFF' }
+    })
+    return dataUrl
+  } catch (_) { return null }
+}

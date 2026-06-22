@@ -113,7 +113,8 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
     hospital: '', clinicAddress: '', phone: '',
     passportNumber: '', syndicateId: '',
     nationality: '', city: '', governorate: '',
-    yearsOfExperience: '', fertilitySpecialist: false,
+    dateOfBirth: '', syndicateJoinDate: '', address: '',
+    fertilitySpecialist: false,
     agreeTerms: false
   })
   const [showPw, setShowPw] = useState(false)
@@ -151,7 +152,9 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
       nationality: f.nationality,
       city: f.city,
       governorate: f.governorate,
-      years_of_experience: f.yearsOfExperience ? parseInt(f.yearsOfExperience) : null,
+      date_of_birth: f.dateOfBirth || null,
+      syndicate_join_date: f.syndicateJoinDate || null,
+      address: f.address || null,
       fertility_specialist: f.fertilitySpecialist
     }])
 
@@ -181,10 +184,17 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
 
         <form onSubmit={handleRegister} className="auth-form scroll">
 
+          {/* English notice */}
+          <div className="en-notice">
+            ⚠️ Please fill all fields in <strong>English</strong>, exactly as they appear on your passport.
+          </div>
+
           {/* Personal */}
           <div className="reg-section">Personal Information</div>
-          <input className="auth-input" name="fullName" placeholder="Full Name *" value={f.fullName} onChange={ch} required />
-          <input className="auth-input" name="email" type="email" placeholder="Email Address *" value={f.email} onChange={ch} required />
+          <input className="auth-input ltr-input" name="fullName"
+            placeholder="Full Name — as on passport *"
+            value={f.fullName} onChange={ch} required dir="ltr" />
+          <input className="auth-input" name="email" type="email" placeholder="Email Address *" value={f.email} dir="ltr" onChange={ch} required />
 
           <div className="pw-wrap">
             <input className="auth-input" name="password" type={showPw ? 'text' : 'password'}
@@ -197,7 +207,7 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
             <EyeButton shown={showPw2} onClick={() => setShowPw2(s => !s)} />
           </div>
 
-          <input className="auth-input" name="phone" type="tel" placeholder="Phone Number" value={f.phone} onChange={ch} />
+          <input className="auth-input" name="phone" type="tel" placeholder="Phone Number" value={f.phone} dir="ltr" onChange={ch} />
 
           {/* Professional */}
           <div className="reg-section">Professional Information</div>
@@ -206,15 +216,19 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
             <option value="pharmacist">Pharmacist</option>
             <option value="medical">Other Medical Profession</option>
           </select>
-          <input className="auth-input" name="specialty" placeholder="Specialty *" value={f.specialty} onChange={ch} required />
-          <input className="auth-input" name="hospital" placeholder="Hospital / Workplace *" value={f.hospital} onChange={ch} required />
-          <input className="auth-input" name="clinicAddress" placeholder="Clinic Address" value={f.clinicAddress} onChange={ch} />
-          <input className="auth-input" name="yearsOfExperience" type="number" placeholder="Years of Experience" value={f.yearsOfExperience} onChange={ch} />
+          <input className="auth-input" name="specialty" placeholder="Specialty *" value={f.specialty} dir="ltr" onChange={ch} required />
+          <input className="auth-input" name="hospital" placeholder="Hospital / Workplace *" value={f.hospital} dir="ltr" onChange={ch} required />
+          <input className="auth-input" name="clinicAddress" placeholder="Clinic Address" value={f.clinicAddress} dir="ltr" onChange={ch} />
+          <label className="auth-label-sm">Date of Birth</label>
+          <input className="auth-input ltr-input" name="dateOfBirth" type="date" value={f.dateOfBirth} onChange={ch} dir="ltr" />
+          <label className="auth-label-sm">Syndicate Join Date</label>
+          <input className="auth-input ltr-input" name="syndicateJoinDate" type="date" value={f.syndicateJoinDate} onChange={ch} dir="ltr" />
+          <input className="auth-input ltr-input" name="address" placeholder="Home / Work Address" value={f.address} onChange={ch} dir="ltr" />
 
           {/* Identity */}
           <div className="reg-section">Identity Documents</div>
-          <input className="auth-input" name="passportNumber" placeholder="Passport Number *" value={f.passportNumber} onChange={ch} required />
-          <input className="auth-input" name="syndicateId" placeholder="Syndicate / Union ID Number" value={f.syndicateId} onChange={ch} />
+          <input className="auth-input" name="passportNumber" placeholder="Passport Number *" value={f.passportNumber} dir="ltr" onChange={ch} required />
+          <input className="auth-input" name="syndicateId" placeholder="Syndicate / Union ID Number" value={f.syndicateId} dir="ltr" onChange={ch} />
 
           <select className="auth-input" name="nationality" value={f.nationality} onChange={ch} required>
             <option value="">Select Nationality *</option>
@@ -223,8 +237,8 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
             ))}
           </select>
 
-          <input className="auth-input" name="city" placeholder="City *" value={f.city} onChange={ch} required />
-          <input className="auth-input" name="governorate" placeholder="Governorate / Province" value={f.governorate} onChange={ch} />
+          <input className="auth-input" name="city" placeholder="City *" value={f.city} dir="ltr" onChange={ch} required />
+          <input className="auth-input" name="governorate" placeholder="Governorate / Province" value={f.governorate} dir="ltr" onChange={ch} />
 
           <label className="auth-check">
             <input type="checkbox" name="fertilitySpecialist" checked={f.fertilitySpecialist} onChange={ch} />
@@ -236,9 +250,8 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
             <label className="auth-check terms-check">
               <input type="checkbox" name="agreeTerms" checked={f.agreeTerms} onChange={ch} />
               <span>
-                I agree to share my information in the association's directory.
-                I acknowledge that <strong>Fertility Global Research is not responsible</strong> for visa decisions made by any authority.
-                I accept the association's terms and conditions.
+                I agree to share my information in the association's directory. I acknowledge that <strong>Fertility Global Research is not responsible</strong> for visa decisions made by any authority.{' '}
+                <a href="#terms" className="auth-link" onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('goto', {detail:'terms'})) }}>View full Terms & Conditions</a>
               </span>
             </label>
           </div>

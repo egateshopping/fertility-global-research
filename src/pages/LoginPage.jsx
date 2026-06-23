@@ -152,27 +152,40 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
     const { data, error: authErr } = await supabase.auth.signUp({ email: f.email, password: f.password })
     if (authErr) { setError(authErr.message); setLoading(false); return }
 
+    // data.user can be null if email confirmation is on
+    const userId = data?.user?.id
+    if (!userId) {
+      setError('Registration failed. Please try again or contact support.')
+      setLoading(false)
+      return
+    }
+
     const { error: pErr } = await supabase.from('doctors').insert([{
-      user_id: data.user.id,
+      user_id: userId,
       full_name: f.fullName,
-      profession: f.profession,
+      profession: f.profession || 'doctor',
       specialty: f.specialty,
       hospital: f.hospital,
-      clinic_address: f.clinicAddress,
-      phone: f.phone,
+      clinic_address: f.clinicAddress || null,
+      phone: f.phone || null,
       email: f.email,
-      passport_number: f.passportNumber,
-      syndicate_id: f.syndicateId,
-      nationality: f.nationality,
-      city: f.city,
-      governorate: f.governorate,
+      passport_number: f.passportNumber || null,
+      syndicate_id: f.syndicateId || null,
+      nationality: f.nationality || null,
+      city: f.city || null,
+      governorate: f.governorate || null,
       date_of_birth: f.dateOfBirth || null,
       syndicate_join_date: f.syndicateJoinDate || null,
       address: f.address || null,
-      fertility_specialist: f.fertilitySpecialist
+      fertility_specialist: f.fertilitySpecialist || false,
+      status: 'pending',
+      is_admin: false
     }])
 
-    if (pErr) setError(pErr.message)
+    if (pErr) {
+      console.error('Profile insert error:', pErr)
+      setError(`Profile save failed: ${pErr.message}. Please contact support.`)
+    }
     else { setDone(true); setTimeout(onSuccess, 1800) }
     setLoading(false)
   }

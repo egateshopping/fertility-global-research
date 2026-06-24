@@ -209,10 +209,10 @@ export default function AdminDashboard() {
         <button className={tab === 'conferences' ? 'atab active' : 'atab'} onClick={() => setTab('conferences')}>{t('admin_conferences')}</button>
         <button className={tab === 'invite' ? 'atab active' : 'atab'} onClick={() => setTab('invite')}>{t('admin_invite')}</button>
         <button className={tab === 'invitations' ? 'atab active' : 'atab'} onClick={() => setTab('invitations')}>{t('admin_invitations')}</button>
-        <button className={tab === 'reports' ? 'atab active' : 'atab'} onClick={() => setTab('reports')}>t('admin_reports')}{reports.length ? ` (${reports.length})` : ''}</button>
-        <button className={tab === 'pending' ? 'atab active' : 'atab'} onClick={() => setTab('pending')}>t('admin_pending')}{pendingDoctors.length ? ` (${pendingDoctors.length})` : ''}</button>
-        <button className={tab === 'inv-requests' ? 'atab active' : 'atab'} onClick={() => setTab('inv-requests')}>t('admin_inv_requests')}{invitationRequests.length ? ` (${invitationRequests.length})` : ''}</button>
-        <button className={tab === 'cert-requests' ? 'atab active' : 'atab'} onClick={() => setTab('cert-requests')}>t('admin_certificates')}{certRequests.length ? ` (${certRequests.length})` : ''}</button>
+        <button className={tab === 'reports' ? 'atab active' : 'atab'} onClick={() => setTab('reports')}>{t('admin_reports')}{reports.length ? ` (${reports.length})` : ''}</button>
+        <button className={tab === 'pending' ? 'atab active' : 'atab'} onClick={() => setTab('pending')}>{t('admin_pending')}{pendingDoctors.length ? ` (${pendingDoctors.length})` : ''}</button>
+        <button className={tab === 'inv-requests' ? 'atab active' : 'atab'} onClick={() => setTab('inv-requests')}>{t('admin_inv_requests')}{invitationRequests.length ? ` (${invitationRequests.length})` : ''}</button>
+        <button className={tab === 'cert-requests' ? 'atab active' : 'atab'} onClick={() => setTab('cert-requests')}>{t('admin_certificates')}{certRequests.length ? ` (${certRequests.length})` : ''}</button>
         <button className={tab === 'activities' ? 'atab active' : 'atab'} onClick={() => setTab('activities')}>{t('admin_activities')}</button>
       </div>
 
@@ -232,16 +232,16 @@ export default function AdminDashboard() {
           <div className="filter-bar">
             <input className="auth-input" placeholder={t('admin_search')} value={search} onChange={e => setSearch(e.target.value)} />
             <select className="auth-input" value={filterCountry} onChange={e => setFilterCountry(e.target.value)}>
-              {<option value="">{t('admin_all_countries')}</option>}
+              <option value="">{t('admin_all_countries')}</option>
               {countries.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <select className="auth-input" value={filterSpecialty} onChange={e => setFilterSpecialty(e.target.value)}>
-              {<option value="">{t('admin_all_specialties')}</option>}
+              <option value="">{t('admin_all_specialties')}</option>
               {specialties.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="export-row">
-            <span className="muted">النتائج: {filteredDoctors.length}</span>
+            <span className="muted">{t('admin_results')}: {filteredDoctors.length}</span>
             <div>
               <button className="btn-soft" onClick={exportExcel}>{t('admin_export_excel')}</button>
               <button className="btn-soft" onClick={exportPDF}>{t('admin_export_pdf')}</button>

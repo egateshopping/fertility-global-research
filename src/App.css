@@ -31,7 +31,7 @@ img{max-width:100%;display:block}
 .navbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
 .nav-inner{max-width:1140px;margin:0 auto;padding:.6rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
 .brand{display:flex;align-items:center;gap:.6rem}
-.brand-logo{width:42px;height:42px;object-fit:contain}
+.brand-logo{width:52px;height:52px;object-fit:contain}
 .brand-name{font-family:'Cairo',sans-serif;font-weight:900;color:var(--navy);font-size:1.05rem;letter-spacing:-.3px}
 .nav-links{display:flex;align-items:center;gap:.3rem;flex-wrap:wrap}
 .nav-link{padding:.5rem .8rem;border-radius:8px;color:var(--muted);font-weight:500;font-size:.95rem;transition:.2s}
@@ -46,7 +46,7 @@ img{max-width:100%;display:block}
 .hero-section{position:relative;background:linear-gradient(135deg,var(--navy-deep) 0%,var(--navy) 45%,var(--teal) 130%);color:#fff;text-align:center;padding:5rem 1.5rem 5.5rem;overflow:hidden}
 .hero-section::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 70% 20%,rgba(57,181,201,.25),transparent 55%);pointer-events:none}
 .hero-inner{position:relative;max-width:760px;margin:0 auto}
-.hero-logo{width:130px;margin:0 auto 1.5rem;filter:drop-shadow(0 8px 24px rgba(0,0,0,.3))}
+.hero-logo{width:160px;margin:0 auto 1.5rem;filter:drop-shadow(0 8px 24px rgba(0,0,0,.3))}
 .hero-title{font-family:'Cairo',sans-serif;font-weight:900;font-size:2.8rem;letter-spacing:-1px;margin-bottom:.5rem}
 .hero-sub-ar{font-size:1.5rem;font-weight:700;color:var(--teal-light);margin-bottom:.8rem}
 .hero-tag{font-size:1rem;opacity:.85;margin-bottom:2rem}
@@ -113,7 +113,7 @@ img{max-width:100%;display:block}
 /* ===== Footer ===== */
 .site-footer{background:var(--navy-deep);color:#cdd9e6;margin-top:0}
 .footer-inner{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;padding:3rem 1.5rem}
-.footer-logo{width:60px;margin-bottom:.8rem}
+.footer-logo{width:80px;margin-bottom:.8rem}
 .footer-org{font-family:'Cairo',sans-serif;font-weight:700;color:#fff;font-size:1.05rem}
 .footer-small{font-size:.9rem;opacity:.7}
 .site-footer h4{color:#fff;font-size:1rem;margin-bottom:.8rem;font-family:'Cairo',sans-serif}
@@ -126,7 +126,7 @@ img{max-width:100%;display:block}
 .auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem;background:linear-gradient(135deg,var(--navy-deep),var(--navy) 60%,var(--teal) 150%)}
 .auth-card{background:#fff;border-radius:18px;padding:2.2rem;width:100%;max-width:430px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
 .auth-card.center{text-align:center}
-.auth-logo{width:80px;margin:0 auto 1rem}
+.auth-logo{width:110px;margin:0 auto 1rem}
 .auth-title{font-family:'Cairo',sans-serif;font-weight:900;color:var(--navy);font-size:1.6rem;text-align:center;margin-bottom:.3rem}
 .auth-sub{text-align:center;color:var(--muted);margin-bottom:1.5rem}
 .auth-form{display:flex;flex-direction:column;gap:.8rem}

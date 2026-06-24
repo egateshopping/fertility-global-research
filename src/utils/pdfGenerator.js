@@ -26,8 +26,8 @@ const addHeader = async (pdf, navy, teal, white) => {
   pdf.setFillColor(...teal)
   pdf.rect(0, 34, 210, 3, 'F')
   try {
-    const logo = await loadImageAsBase64('/logo.png', 200, 0.65)
-    if (logo) pdf.addImage(logo, 'PNG', 10, 3, 28, 28)
+    const logo = await loadImageAsBase64('/logo.png', 350, 0.85)
+    if (logo) pdf.addImage(logo, 'PNG', 8, 2, 32, 32)
   } catch (_) {}
   pdf.setTextColor(...white)
   pdf.setFont('Helvetica', 'bold')
@@ -192,8 +192,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.setTextColor(...grey)
   pdf.text('President', 20, y); y += 5
   pdf.text('Fertility Global Research', 20, y); y += 5
-  pdf.text('London, United Kingdom', 20, y); y += 5
-  pdf.text('fertility-global.org', 20, y)
+  pdf.text('London, United Kingdom', 20, y)
 
   // QR code bottom right
   try {

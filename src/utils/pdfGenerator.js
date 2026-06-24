@@ -193,7 +193,6 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.text('President', 20, y); y += 5
   pdf.text('Fertility Global Research', 20, y); y += 5
   pdf.text('London, United Kingdom', 20, y); y += 5
-  pdf.text('contact@fertility-global.org', 20, y); y += 5
   pdf.text('fertility-global.org', 20, y)
 
   // QR code bottom right

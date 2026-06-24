@@ -3,8 +3,10 @@ import { supabase, generateInvitationNumber } from '../supabaseClient'
 import { generateInvitationPDF } from '../utils/pdfGenerator'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
+import { useLang } from '../i18n.jsx'
 
 export default function AdminDashboard() {
+  const { t } = useLang()
   const [tab, setTab] = useState('overview')
   const [doctors, setDoctors] = useState([])
   const [conferences, setConferences] = useState([])
@@ -202,23 +204,23 @@ export default function AdminDashboard() {
 
       {/* tabs */}
       <div className="admin-tabs">
-        <button className={tab === 'overview' ? 'atab active' : 'atab'} onClick={() => setTab('overview')}>الإحصائيات</button>
-        <button className={tab === 'doctors' ? 'atab active' : 'atab'} onClick={() => setTab('doctors')}>الأطباء</button>
-        <button className={tab === 'conferences' ? 'atab active' : 'atab'} onClick={() => setTab('conferences')}>المؤتمرات</button>
-        <button className={tab === 'invite' ? 'atab active' : 'atab'} onClick={() => setTab('invite')}>إصدار دعوة</button>
-        <button className={tab === 'invitations' ? 'atab active' : 'atab'} onClick={() => setTab('invitations')}>الدعوات</button>
-        <button className={tab === 'reports' ? 'atab active' : 'atab'} onClick={() => setTab('reports')}>البلاغات{reports.length ? ` (${reports.length})` : ''}</button>
-        <button className={tab === 'pending' ? 'atab active' : 'atab'} onClick={() => setTab('pending')}>Pending{pendingDoctors.length ? ` (${pendingDoctors.length})` : ''}</button>
-        <button className={tab === 'inv-requests' ? 'atab active' : 'atab'} onClick={() => setTab('inv-requests')}>Inv. Requests{invitationRequests.length ? ` (${invitationRequests.length})` : ''}</button>
-        <button className={tab === 'cert-requests' ? 'atab active' : 'atab'} onClick={() => setTab('cert-requests')}>Certificates{certRequests.length ? ` (${certRequests.length})` : ''}</button>
-        <button className={tab === 'activities' ? 'atab active' : 'atab'} onClick={() => setTab('activities')}>Member Activities</button>
+        <button className={tab === 'overview' ? 'atab active' : 'atab'} onClick={() => setTab('overview')}>{t('admin_overview')}</button>
+        <button className={tab === 'doctors' ? 'atab active' : 'atab'} onClick={() => setTab('doctors')}>{t('admin_doctors')}</button>
+        <button className={tab === 'conferences' ? 'atab active' : 'atab'} onClick={() => setTab('conferences')}>{t('admin_conferences')}</button>
+        <button className={tab === 'invite' ? 'atab active' : 'atab'} onClick={() => setTab('invite')}>{t('admin_invite')}</button>
+        <button className={tab === 'invitations' ? 'atab active' : 'atab'} onClick={() => setTab('invitations')}>{t('admin_invitations')}</button>
+        <button className={tab === 'reports' ? 'atab active' : 'atab'} onClick={() => setTab('reports')}>t('admin_reports')}{reports.length ? ` (${reports.length})` : ''}</button>
+        <button className={tab === 'pending' ? 'atab active' : 'atab'} onClick={() => setTab('pending')}>t('admin_pending')}{pendingDoctors.length ? ` (${pendingDoctors.length})` : ''}</button>
+        <button className={tab === 'inv-requests' ? 'atab active' : 'atab'} onClick={() => setTab('inv-requests')}>t('admin_inv_requests')}{invitationRequests.length ? ` (${invitationRequests.length})` : ''}</button>
+        <button className={tab === 'cert-requests' ? 'atab active' : 'atab'} onClick={() => setTab('cert-requests')}>t('admin_certificates')}{certRequests.length ? ` (${certRequests.length})` : ''}</button>
+        <button className={tab === 'activities' ? 'atab active' : 'atab'} onClick={() => setTab('activities')}>{t('admin_activities')}</button>
       </div>
 
       {/* OVERVIEW */}
       {tab === 'overview' && (
         <div className="stat-cards">
-          <div className="acard"><span className="acard-num">{doctors.length}</span><span className="acard-lbl">طبيب مسجّل</span></div>
-          <div className="acard"><span className="acard-num">{invitations.length}</span><span className="acard-lbl">دعوة صادرة</span></div>
+          <div className="acard"><span className="acard-num">{doctors.length}</span><span className="acard-lbl">{t('admin_total_doctors')}</span></div>
+          <div className="acard"><span className="acard-num">{invitations.length}</span><span className="acard-lbl">{t('admin_total_invitations')}</span></div>
           <div className="acard"><span className="acard-num">{conferences.length}</span><span className="acard-lbl">مؤتمر</span></div>
           <div className="acard"><span className="acard-num">{countries.length}</span><span className="acard-lbl">دولة</span></div>
         </div>
@@ -228,33 +230,33 @@ export default function AdminDashboard() {
       {tab === 'doctors' && (
         <div className="panel">
           <div className="filter-bar">
-            <input className="auth-input" placeholder="بحث بالاسم / الإيميل / الجواز" value={search} onChange={e => setSearch(e.target.value)} />
+            <input className="auth-input" placeholder={t('admin_search')} value={search} onChange={e => setSearch(e.target.value)} />
             <select className="auth-input" value={filterCountry} onChange={e => setFilterCountry(e.target.value)}>
-              <option value="">كل الدول</option>
+              {<option value="">{t('admin_all_countries')}</option>}
               {countries.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <select className="auth-input" value={filterSpecialty} onChange={e => setFilterSpecialty(e.target.value)}>
-              <option value="">كل التخصصات</option>
+              {<option value="">{t('admin_all_specialties')}</option>}
               {specialties.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div className="export-row">
             <span className="muted">النتائج: {filteredDoctors.length}</span>
             <div>
-              <button className="btn-soft" onClick={exportExcel}>تصدير Excel</button>
-              <button className="btn-soft" onClick={exportPDF}>تصدير PDF</button>
+              <button className="btn-soft" onClick={exportExcel}>{t('admin_export_excel')}</button>
+              <button className="btn-soft" onClick={exportPDF}>{t('admin_export_pdf')}</button>
             </div>
           </div>
           <div className="table-scroll">
             <table>
-              <thead><tr><th>الاسم</th><th>التخصص</th><th>الدولة</th><th>الجواز</th><th>إجراءات</th></tr></thead>
+              <thead><tr><th>{t('admin_name')}</th><th>{t('admin_specialty')}</th><th>{t('admin_country')}</th><th>{t('admin_passport')}</th><th>{t('admin_actions')}</th></tr></thead>
               <tbody>
                 {filteredDoctors.map(d => (
                   <tr key={d.id}>
                     <td>{d.full_name}</td><td>{d.specialty}</td><td>{d.nationality}</td><td>{d.passport_number}</td>
                     <td className="row-actions">
-                      <button className="mini" onClick={() => openDoctorFiles(d)}>الملفات</button>
-                      <button className="mini" onClick={() => setEditDoctor({ ...d })}>تعديل</button>
+                      <button className="mini" onClick={() => openDoctorFiles(d)}>{t('admin_files')}</button>
+                      <button className="mini" onClick={() => setEditDoctor({ ...d })}>{t('admin_edit')}</button>
                       <button
                         className={d.is_admin ? 'mini danger' : 'mini admin-btn'}
                         onClick={() => toggleAdmin(d)}
@@ -277,13 +279,13 @@ export default function AdminDashboard() {
       {tab === 'conferences' && (
         <div className="panel">
           <div className="export-row">
-            <h3>المؤتمرات</h3>
+            <h3>{t('admin_conferences')}</h3>
             <button className="btn-primary" onClick={() => setShowConfForm(!showConfForm)}>{showConfForm ? 'إلغاء' : 'مؤتمر جديد'}</button>
           </div>
           {showConfForm && (
             <form onSubmit={createConference} className="conf-form">
-              <input className="auth-input" placeholder="عنوان المؤتمر" value={newConf.title} onChange={e => setNewConf({ ...newConf, title: e.target.value })} required />
-              <input className="auth-input" placeholder="المكان" value={newConf.location} onChange={e => setNewConf({ ...newConf, location: e.target.value })} required />
+              <input className="auth-input" placeholder={t('admin_conf_title')} value={newConf.title} onChange={e => setNewConf({ ...newConf, title: e.target.value })} required />
+              <input className="auth-input" placeholder={t('admin_conf_location')} value={newConf.location} onChange={e => setNewConf({ ...newConf, location: e.target.value })} required />
               <textarea className="auth-input" placeholder="الوصف" value={newConf.description} onChange={e => setNewConf({ ...newConf, description: e.target.value })} rows="2" />
               <div className="three-col">
                 <label>البداية<input className="auth-input" type="date" value={newConf.start_date} onChange={e => setNewConf({ ...newConf, start_date: e.target.value })} required /></label>
@@ -331,8 +333,8 @@ export default function AdminDashboard() {
             </label>
           </div>
           <div className="inv-btns">
-            <button className="btn-primary" onClick={instantIssue}>⚡ إصدار فوري + تنزيل PDF</button>
-            <button className="btn-soft" onClick={startInvitation}>مراجعة قبل الإصدار</button>
+            <button className="btn-primary" onClick={instantIssue}>{t('admin_instant_issue')}</button>
+            <button className="btn-soft" onClick={startInvitation}>{t('admin_review_issue')}</button>
           </div>
 
           {invDoctorEdit && (
@@ -347,7 +349,7 @@ export default function AdminDashboard() {
                 <input className="auth-input" value={invDoctorEdit.hospital} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, hospital: e.target.value })} placeholder="Hospital" />
                 <input className="auth-input" value={invDoctorEdit.nationality} onChange={e => setInvDoctorEdit({ ...invDoctorEdit, nationality: e.target.value })} placeholder="Nationality" />
               </div>
-              <button className="btn-primary full" onClick={confirmIssue}>إصدار الدعوة وتنزيل PDF</button>
+              <button className="btn-primary full" onClick={confirmIssue}>{t('admin_confirm_issue')}</button>
             </div>
           )}
         </div>
@@ -359,7 +361,7 @@ export default function AdminDashboard() {
           <h3>الدعوات الصادرة</h3>
           <div className="table-scroll">
             <table>
-              <thead><tr><th>الطبيب</th><th>رقم الدعوة</th><th>المؤتمر</th><th>الإصدار</th><th>إجراءات</th></tr></thead>
+              <thead><tr><th>{t('admin_doctor')}</th><th>{t('admin_inv_number')}</th><th>{t('admin_conf_name')}</th><th>الإصدار</th><th>{t('admin_actions')}</th></tr></thead>
               <tbody>
                 {invitations.map(i => {
                   const d = doctors.find(x => x.id === i.doctor_id)
@@ -481,7 +483,7 @@ export default function AdminDashboard() {
       {/* MEMBER ACTIVITIES */}
       {tab === 'activities' && (
         <div className="panel">
-          <h3>Member Activities</h3>
+          <h3>{t('admin_activities')}</h3>
           <div className="card-grid">
             {memberActivities.map(a => (
               <div key={a.id} className="event-card">

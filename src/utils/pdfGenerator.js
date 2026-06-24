@@ -180,7 +180,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
     if (sig) { pdf.addImage(sig, 'PNG', 20, y, 50, 20); y += 24 }
   } catch (_) { y += 8 }
 
-  if (y > 255) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 20 }
+  if (y > 262) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 20 }
   pdf.setFont('Helvetica', 'bold')
   pdf.setFontSize(10)
   pdf.setTextColor(...navy)

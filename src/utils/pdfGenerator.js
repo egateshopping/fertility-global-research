@@ -159,18 +159,20 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
     `Fertility Global Research was established to maintain and strengthen active interaction within the medical community in the UK and internationally. The participation of consultants and experts from across the world helps to promote advances in healthcare services.`,
     `This medical conference will bring together leading medical professionals from around the world to discuss the latest advancements, research findings, and best practices in Medicine and fertility science.`,
     `We believe your expertise as ${doctor.specialty ? 'a specialist in ' + doctor.specialty : 'a qualified medical professional'} at ${doctor.hospital || 'your institution'} would be a valuable addition to the conference. Your participation and input in the scientific programme will help to discuss the challenges facing health professionals and healthcare services.`,
-    `Your participation would allow you to engage in discussions, learn about the latest research and technological advancements, and we look forward to welcoming you at the conference.`,
+
   ]
 
   paras.forEach(para => {
-    if (y > 255) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 20 }
     const lines = pdf.splitTextToSize(para, 170)
     lines.forEach(line => { pdf.text(line, 20, y); y += 5 })
     y += 2
   })
 
+  // check overflow after all paras
+  if (y > 248) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 50; }
+
   y += 4
-  if (y > 255) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 20 }
+  if (y > 248) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 50 }
   pdf.text('Yours sincerely,', 20, y)
   y += 7
 
@@ -297,7 +299,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   ]
 
   p2paras.forEach(para => {
-    if (y > 255) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 20 }
+    if (y > 248) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 20 }
     const lines = pdf.splitTextToSize(para, 170)
     lines.forEach(l => { pdf.text(l, 20, y); y += 5.5 })
     y += 4
@@ -319,7 +321,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
 
   pdf.setFont('Helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(...black)
   terms.forEach(term => {
-    if (y > 265) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 20 }
+    if (y > 248) { addFooter(pdf, navy, teal, white); pdf.addPage(); y = 20 }
     const lines = pdf.splitTextToSize(`• ${term}`, 165)
     lines.forEach(l => { pdf.text(l, 23, y); y += 5.5 })
     y += 1

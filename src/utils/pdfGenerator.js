@@ -1,17 +1,20 @@
 import jsPDF from 'jspdf'
 
-const loadImageAsBase64 = (url) =>
+const loadImageAsBase64 = (url, maxW = 300, quality = 0.7) =>
   new Promise((resolve) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => {
       const canvas = document.createElement('canvas')
-      canvas.width = img.width; canvas.height = img.height
+      // Scale down to maxW to reduce PDF size
+      const scale = img.width > maxW ? maxW / img.width : 1
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
       const ctx = canvas.getContext('2d')
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(img, 0, 0)
-      resolve(canvas.toDataURL('image/png'))
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      resolve(canvas.toDataURL('image/jpeg', quality))
     }
     img.onerror = () => resolve(null)
     img.src = url
@@ -23,7 +26,7 @@ const addHeader = async (pdf, navy, teal, white) => {
   pdf.setFillColor(...teal)
   pdf.rect(0, 34, 210, 3, 'F')
   try {
-    const logo = await loadImageAsBase64('/logo.png')
+    const logo = await loadImageAsBase64('/logo.png', 200, 0.65)
     if (logo) pdf.addImage(logo, 'PNG', 10, 3, 28, 28)
   } catch (_) {}
   pdf.setTextColor(...white)
@@ -174,7 +177,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
 
   // Signature
   try {
-    const sig = await loadImageAsBase64('/signature.png')
+    const sig = await loadImageAsBase64('/signature.png', 400, 0.8)
     if (sig) { pdf.addImage(sig, 'PNG', 20, y, 50, 20); y += 24 }
   } catch (_) { y += 8 }
 
@@ -330,7 +333,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.text('Sincerely,', 20, y); y += 10
 
   try {
-    const sig = await loadImageAsBase64('/signature.png')
+    const sig = await loadImageAsBase64('/signature.png', 400, 0.8)
     if (sig) { pdf.addImage(sig, 'PNG', 20, y, 50, 20); y += 24 }
   } catch (_) { y += 8 }
 

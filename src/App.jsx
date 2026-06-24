@@ -9,7 +9,6 @@ import NewsActivitiesPage from './pages/NewsActivitiesPage'
 import HomePage from './pages/HomePage'
 import ReportPage from './pages/ReportPage'
 import TermsPage from './pages/TermsPage'
-import InvitationRequestPage from './pages/InvitationRequestPage'
 import { useLang } from './i18n.jsx'
 import './App.css'
 
@@ -161,7 +160,6 @@ export default function App() {
               <button className={navCls(currentPage, 'admin')} onClick={() => goTo('admin')}>{t('nav_admin')}</button>
             )}
 
-            <button className={navCls(currentPage, 'request-invitation')} onClick={() => goTo('request-invitation')}>Request Invitation</button>
             <button className="lang-toggle" onClick={toggle}>{lang === 'ar' ? 'EN' : 'ع'}</button>
 
             {user ? (
@@ -183,7 +181,6 @@ export default function App() {
         {currentPage === 'dir_medical' && <div className="page-wrap"><DoctorDirectory profession="medical" /></div>}
         {currentPage === 'report' && <div className="page-wrap"><ReportPage /></div>}
         {currentPage === 'terms' && <div className="page-wrap"><TermsPage /></div>}
-        {currentPage === 'request-invitation' && <div className="page-wrap"><InvitationRequestPage /></div>}
         {currentPage === 'blog' && <div className="page-wrap"><BlogPage isAdmin={isAdmin} /></div>}
         {currentPage === 'dashboard' && user && !isAdmin && <div className="page-wrap"><DoctorDashboard doctor={doctor} /></div>}
         {currentPage === 'admin' && user && isAdmin && <div className="page-wrap"><AdminDashboard /></div>}
@@ -208,7 +205,6 @@ export default function App() {
             <button className="footer-link" onClick={() => goTo('news')}>{t('nav_news')}</button>
             <button className="footer-link" onClick={() => goTo('report')}>{t('report_btn')}</button>
             <button className="footer-link" onClick={() => goTo('terms')}>Terms & Conditions</button>
-            <button className="footer-link" onClick={() => goTo('request-invitation')}>Request Invitation</button>
           </div>
         </div>
         <div className="footer-social">

@@ -65,6 +65,12 @@ export default function DoctorDashboard({ doctor }) {
   const [newActivity, setNewActivity] = useState({ title: '', description: '' })
   const [activityImg, setActivityImg] = useState(null)
   const [postingActivity, setPostingActivity] = useState(false)
+  // Invitation requests
+  const [invRequests, setInvRequests] = useState([])
+  const [selectedConfId, setSelectedConfId] = useState('')
+  const [invReqMsg, setInvReqMsg] = useState('')
+  const [submittingReq, setSubmittingReq] = useState(false)
+  const [reqSent, setReqSent] = useState(false)
 
   useEffect(() => {
     if (!doctor?.id) return
@@ -72,6 +78,7 @@ export default function DoctorDashboard({ doctor }) {
     fetchConferences()
     fetchInvitations()
     fetchActivities()
+    fetchInvRequests()
   }, [doctor?.id])
 
   const fetchDocuments = async () => {
@@ -87,6 +94,37 @@ export default function DoctorDashboard({ doctor }) {
   const fetchInvitations = async () => {
     const { data } = await supabase.from('invitations').select('*').eq('doctor_id', doctor.id)
     setInvitations(data || [])
+  }
+
+  const fetchInvRequests = async () => {
+    const { data } = await supabase.from('invitation_requests')
+      .select('*, conferences(title)')
+      .eq('email', doctor.email)
+      .order('created_at', { ascending: false })
+    setInvRequests(data || [])
+  }
+
+  const submitInvitationRequest = async (e) => {
+    e.preventDefault()
+    if (!selectedConfId) { alert('Please select a conference'); return }
+    setSubmittingReq(true)
+    const { error } = await supabase.from('invitation_requests').insert([{
+      full_name: doctor.full_name,
+      email: doctor.email,
+      specialty: doctor.specialty,
+      passport_number: doctor.passport_number,
+      conference_id: selectedConfId,
+      message: invReqMsg,
+      status: 'new'
+    }])
+    if (!error) {
+      setReqSent(true)
+      setSelectedConfId('')
+      setInvReqMsg('')
+      fetchInvRequests()
+      setTimeout(() => setReqSent(false), 4000)
+    }
+    setSubmittingReq(false)
   }
 
   const fetchActivities = async () => {
@@ -329,6 +367,56 @@ export default function DoctorDashboard({ doctor }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ── Invitation Request ── */}
+      <div className="panel">
+        <h2 style={{ fontFamily: 'Cairo', color: 'var(--navy)', marginBottom: '1rem', fontSize: '1.4rem' }}>
+          Request an Invitation Letter
+        </h2>
+        <p className="muted" style={{ marginBottom: '1.2rem', fontSize: '.9rem' }}>
+          Select a conference below to request an official invitation letter. The administration will review your request and issue the invitation.
+        </p>
+
+        {reqSent && (
+          <div className="auth-ok" style={{ marginBottom: '1rem' }}>
+            ✓ Your request has been submitted. The admin will review and issue your invitation.
+          </div>
+        )}
+
+        <form onSubmit={submitInvitationRequest} style={{ display: 'flex', flexDirection: 'column', gap: '.8rem', maxWidth: 500 }}>
+          <select className="auth-input" value={selectedConfId} onChange={e => setSelectedConfId(e.target.value)} required>
+            <option value="">— Select Conference —</option>
+            {conferences.map(c => (
+              <option key={c.id} value={c.id}>{c.title} ({c.start_date})</option>
+            ))}
+          </select>
+          <textarea className="auth-input" rows="3"
+            placeholder="Additional notes (optional)"
+            value={invReqMsg} onChange={e => setInvReqMsg(e.target.value)} />
+          <button className="btn-primary" type="submit" disabled={submittingReq} style={{ width: 'fit-content', padding: '.7rem 1.8rem' }}>
+            {submittingReq ? 'Submitting...' : '📨 Submit Invitation Request'}
+          </button>
+        </form>
+
+        {invRequests.length > 0 && (
+          <div style={{ marginTop: '1.5rem' }}>
+            <h3 style={{ color: 'var(--navy)', marginBottom: '.8rem', fontSize: '1rem' }}>Previous Requests</h3>
+            {invRequests.map(r => (
+              <div key={r.id} className="inv-row">
+                <div>
+                  <strong>{r.conferences?.title || 'Conference'}</strong>
+                  <p className="muted" style={{ fontSize: '.85rem' }}>
+                    {(r.created_at || '').split('T')[0]} ·{' '}
+                    <span style={{ color: r.status === 'issued' ? '#27ae60' : r.status === 'rejected' ? '#e74c3c' : '#f39c12', fontWeight: 700 }}>
+                      {r.status === 'new' ? '⏳ Pending' : r.status === 'issued' ? '✅ Issued' : '❌ Rejected'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <CertificateRequest doctor={doctor} />

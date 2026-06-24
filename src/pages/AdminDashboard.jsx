@@ -198,6 +198,39 @@ export default function AdminDashboard() {
   const approveCert = async (id) => { await supabase.from('certificate_requests').update({ status: 'approved', issued_date: new Date().toISOString().split('T')[0] }).eq('id', id); fetchCertRequests() }
   const deleteActivity = async (id) => { if (confirm('Delete this activity?')) { await supabase.from('member_activities').delete().eq('id', id); fetchMemberActivities() } }
 
+  // Issue invitation directly from a request
+  const issueFromRequest = async (request) => {
+    const doctor = doctors.find(d => d.email === request.email)
+    if (!doctor) { alert('Doctor not found in system. They must complete full registration first.'); return }
+    const conference = conferences.find(c => c.id === request.conference_id)
+    if (!conference) { alert('Conference not found.'); return }
+
+    const invNumber = generateInvitationNumber()
+    const issueDate = new Date().toISOString().split('T')[0]
+
+    const { data, error } = await supabase.from('invitations').insert([{
+      doctor_id: doctor.id,
+      conference_id: request.conference_id,
+      invitation_number: invNumber,
+      issue_date: issueDate,
+      travel_date: null,
+      status: 'issued'
+    }]).select()
+
+    if (error) { alert(error.message); return }
+
+    // Update request status
+    await supabase.from('invitation_requests').update({ status: 'issued' }).eq('id', request.id)
+
+    // Generate and download PDF
+    const pdf = await generateInvitationPDF(doctor, conference, data[0])
+    pdf.save(`${invNumber}.pdf`)
+
+    fetchInvitationRequests()
+    fetchInvitations()
+    alert('Invitation issued and PDF downloaded!')
+  }
+
   return (
     <div className="admin">
       <h1>لوحة التحكم</h1>
@@ -438,12 +471,22 @@ export default function AdminDashboard() {
           <h3>Invitation Requests from Visitors</h3>
           <div className="table-scroll">
             <table>
-              <thead><tr><th>Name</th><th>Email</th><th>Specialty</th><th>Passport</th><th>Date</th></tr></thead>
+              <thead><tr><th>Name</th><th>Email</th><th>Specialty</th><th>Passport</th><th>Date</th><th>Action</th></tr></thead>
               <tbody>
                 {invitationRequests.map(r => (
                   <tr key={r.id}>
                     <td>{r.full_name}</td><td>{r.email}</td><td>{r.specialty || '—'}</td>
                     <td>{r.passport_number}</td><td>{(r.created_at || '').split('T')[0]}</td>
+                    <td className="row-actions">
+                      {r.status === 'new' && (
+                        <button className="mini admin-btn" onClick={() => issueFromRequest(r)}>
+                          ⚡ Issue
+                        </button>
+                      )}
+                      <span style={{ fontSize: '.8rem', color: r.status === 'issued' ? '#27ae60' : '#f39c12', fontWeight: 700 }}>
+                        {r.status === 'issued' ? '✅ Issued' : '⏳ Pending'}
+                      </span>
+                    </td>
                   </tr>
                 ))}
                 {invitationRequests.length === 0 && <tr><td colSpan="5" className="muted center-td">No requests</td></tr>}

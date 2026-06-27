@@ -66,3 +66,6 @@ CREATE TABLE IF NOT EXISTS member_activities (
   created_at TIMESTAMP DEFAULT NOW()
 );
 ALTER TABLE member_activities DISABLE ROW LEVEL SECURITY;
+
+-- 7) Add cert_number column to certificate_requests
+ALTER TABLE certificate_requests ADD COLUMN IF NOT EXISTS cert_number TEXT;

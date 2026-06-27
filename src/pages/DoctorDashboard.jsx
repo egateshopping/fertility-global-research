@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { generateInvitationPDF } from '../utils/pdfGenerator'
 import CertificateRequest from './CertificateRequest'
+import { generateCertificatePDF } from '../utils/certificateGenerator'
 
 const BUCKET = 'doctor-documents'
 
@@ -67,6 +68,7 @@ export default function DoctorDashboard({ doctor }) {
   const [postingActivity, setPostingActivity] = useState(false)
   // Invitation requests
   const [invRequests, setInvRequests] = useState([])
+  const [certRecord, setCertRecord] = useState(null)
   const [selectedConfId, setSelectedConfId] = useState('')
   const [invReqMsg, setInvReqMsg] = useState('')
   const [submittingReq, setSubmittingReq] = useState(false)
@@ -79,6 +81,7 @@ export default function DoctorDashboard({ doctor }) {
     fetchInvitations()
     fetchActivities()
     fetchInvRequests()
+    fetchCertRecord()
   }, [doctor?.id])
 
   const fetchDocuments = async () => {
@@ -94,6 +97,21 @@ export default function DoctorDashboard({ doctor }) {
   const fetchInvitations = async () => {
     const { data } = await supabase.from('invitations').select('*').eq('doctor_id', doctor.id)
     setInvitations(data || [])
+  }
+
+  const fetchCertRecord = async () => {
+    if (!doctor?.id) return
+    const { data } = await supabase.from('certificate_requests')
+      .select('*').eq('doctor_id', doctor.id).eq('status', 'approved')
+      .order('created_at', { ascending: false }).limit(1)
+    if (data && data.length > 0) setCertRecord(data[0])
+  }
+
+  const downloadCertificate = async () => {
+    if (!certRecord) return
+    const certNumber = certRecord.cert_number || `FGR-CERT-${doctor.id?.slice(0,4).toUpperCase()}-${new Date().getFullYear()}`
+    const pdf = await generateCertificatePDF(doctor, certNumber, certRecord.issued_date)
+    pdf.save(`FGR-Certificate-${doctor.full_name}.pdf`)
   }
 
   const fetchInvRequests = async () => {
@@ -368,6 +386,27 @@ export default function DoctorDashboard({ doctor }) {
           ))}
         </div>
       </div>
+
+      {/* ── Membership Certificate ── */}
+      {certRecord && (
+        <div className="panel" style={{ background: 'linear-gradient(135deg, #0B2E5C 0%, #1A8FA8 100%)', color: '#fff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h2 style={{ fontFamily: 'Cairo', fontSize: '1.4rem', marginBottom: '.4rem' }}>
+                🎓 Membership Certificate
+              </h2>
+              <p style={{ opacity: .85, fontSize: '.9rem' }}>
+                Issued: {certRecord.issued_date} · No: {certRecord.cert_number || 'FGR-CERT'}
+              </p>
+            </div>
+            <button
+              onClick={downloadCertificate}
+              style={{ background: '#fff', color: '#0B2E5C', fontWeight: 700, padding: '.7rem 1.5rem', borderRadius: 10, fontSize: '.95rem', cursor: 'pointer', border: 'none' }}>
+              ⬇ Download Certificate
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Invitation Request ── */}
       <div className="panel">

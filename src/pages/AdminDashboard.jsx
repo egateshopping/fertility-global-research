@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, generateInvitationNumber } from '../supabaseClient'
 import { generateInvitationPDF } from '../utils/pdfGenerator'
+import { generateCertificatePDF } from '../utils/certificateGenerator'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import { useLang } from '../i18n.jsx'
@@ -21,6 +22,9 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState('')
   const [filterCountry, setFilterCountry] = useState('')
   const [filterSpecialty, setFilterSpecialty] = useState('')
+  // global search
+  const [globalSearch, setGlobalSearch] = useState('')
+  const [globalResults, setGlobalResults] = useState(null)
 
   // modals
   const [viewDoctor, setViewDoctor] = useState(null)
@@ -48,6 +52,27 @@ export default function AdminDashboard() {
   const fetchMemberActivities = async () => { const { data } = await supabase.from('member_activities').select('*').order('created_at', { ascending: false }); setMemberActivities(data || []) }
 
   // ---------- filters ----------
+  const doGlobalSearch = (q) => {
+    setGlobalSearch(q)
+    if (!q.trim()) { setGlobalResults(null); return }
+    const s = q.toLowerCase().trim()
+    const matchDoctors = doctors.filter(d =>
+      (d.full_name || '').toLowerCase().includes(s) ||
+      (d.email || '').toLowerCase().includes(s) ||
+      (d.passport_number || '').toLowerCase().includes(s) ||
+      (d.specialty || '').toLowerCase().includes(s)
+    )
+    const matchInvitations = invitations.filter(inv =>
+      (inv.invitation_number || '').toLowerCase().includes(s) ||
+      (doctors.find(d => d.id === inv.doctor_id)?.full_name || '').toLowerCase().includes(s) ||
+      (conferences.find(c => c.id === inv.conference_id)?.title || '').toLowerCase().includes(s)
+    )
+    const matchConferences = conferences.filter(c =>
+      (c.title || '').toLowerCase().includes(s) ||
+      (c.location || '').toLowerCase().includes(s)
+    )
+    setGlobalResults({ doctors: matchDoctors, invitations: matchInvitations, conferences: matchConferences })
+  }
   const countries = [...new Set(doctors.map(d => d.nationality).filter(Boolean))]
   const specialties = [...new Set(doctors.map(d => d.specialty).filter(Boolean))]
   const filteredDoctors = doctors.filter(d => {
@@ -193,7 +218,21 @@ export default function AdminDashboard() {
   }
   const deleteInvitation = async (id) => { if (confirm('حذف هذه الدعوة؟')) { await supabase.from('invitations').delete().eq('id', id); fetchInvitations() } }
   const deleteReport = async (id) => { if (confirm('حذف هذا البلاغ؟')) { await supabase.from('reports').delete().eq('id', id); fetchReports() } }
-  const approveDoctor = async (id) => { await supabase.from('doctors').update({ status: 'approved' }).eq('id', id); fetchPending(); fetchDoctors() }
+  const approveDoctor = async (id) => {
+    await supabase.from('doctors').update({ status: 'approved' }).eq('id', id)
+    // Auto-create certificate record on approval
+    const issueDate = new Date().toISOString().split('T')[0]
+    const certNumber = `FGR-CERT-${Math.floor(1000 + Math.random() * 9000)}-${new Date().getFullYear()}`
+    await supabase.from('certificate_requests').insert([{
+      doctor_id: id,
+      status: 'approved',
+      issued_date: issueDate,
+      cert_number: certNumber
+    }])
+    fetchPending()
+    fetchDoctors()
+    fetchCertRequests()
+  }
   const rejectDoctor = async (id) => { if (confirm('Reject this membership?')) { await supabase.from('doctors').update({ status: 'rejected' }).eq('id', id); fetchPending() } }
   const approveCert = async (id) => { await supabase.from('certificate_requests').update({ status: 'approved', issued_date: new Date().toISOString().split('T')[0] }).eq('id', id); fetchCertRequests() }
   const deleteActivity = async (id) => { if (confirm('Delete this activity?')) { await supabase.from('member_activities').delete().eq('id', id); fetchMemberActivities() } }
@@ -249,7 +288,98 @@ export default function AdminDashboard() {
         <button className={tab === 'activities' ? 'atab active' : 'atab'} onClick={() => setTab('activities')}>{t('admin_activities')}</button>
       </div>
 
-      {/* OVERVIEW */}
+      <div className="global-search-bar">
+        <span className="global-search-icon">🔍</span>
+        <input
+          className="global-search-input"
+          placeholder="Search doctors, invitations, conferences..."
+          value={globalSearch}
+          onChange={e => doGlobalSearch(e.target.value)}
+        />
+        {globalSearch && (
+          <button className="global-search-clear" onClick={() => { setGlobalSearch(''); setGlobalResults(null) }}>✕</button>
+        )}
+      </div>
+
+      {/* GLOBAL SEARCH RESULTS */}
+      {globalResults && (
+        <div className="panel" style={{ marginBottom: '1rem' }}>
+          <h3 style={{ marginBottom: '1rem' }}>
+            Search results for: <span style={{ color: 'var(--teal)' }}>{globalSearch}</span>
+          </h3>
+
+          {/* Doctors */}
+          {globalResults.doctors.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <h4 style={{ color: 'var(--navy)', marginBottom: '.6rem' }}>👨‍⚕️ Doctors ({globalResults.doctors.length})</h4>
+              <div className="table-scroll">
+                <table>
+                  <thead><tr><th>Name</th><th>Specialty</th><th>Country</th><th>Email</th><th>Status</th></tr></thead>
+                  <tbody>
+                    {globalResults.doctors.map(d => (
+                      <tr key={d.id} style={{ cursor: 'pointer' }} onClick={() => { setTab('doctors'); setSearch(d.full_name); setGlobalSearch(''); setGlobalResults(null) }}>
+                        <td><strong>{d.full_name}</strong></td>
+                        <td>{d.specialty}</td>
+                        <td>{d.nationality}</td>
+                        <td>{d.email}</td>
+                        <td><span style={{ color: d.status === 'approved' ? '#27ae60' : d.status === 'rejected' ? '#e74c3c' : '#f39c12', fontWeight: 700 }}>{d.status}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Invitations */}
+          {globalResults.invitations.length > 0 && (
+            <div style={{ marginBottom: '1rem' }}>
+              <h4 style={{ color: 'var(--navy)', marginBottom: '.6rem' }}>📄 Invitations ({globalResults.invitations.length})</h4>
+              <div className="table-scroll">
+                <table>
+                  <thead><tr><th>Ref No.</th><th>Doctor</th><th>Conference</th><th>Issue Date</th></tr></thead>
+                  <tbody>
+                    {globalResults.invitations.map(inv => (
+                      <tr key={inv.id}>
+                        <td><strong>{inv.invitation_number}</strong></td>
+                        <td>{doctors.find(d => d.id === inv.doctor_id)?.full_name || '—'}</td>
+                        <td>{conferences.find(c => c.id === inv.conference_id)?.title || '—'}</td>
+                        <td>{inv.issue_date}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Conferences */}
+          {globalResults.conferences.length > 0 && (
+            <div>
+              <h4 style={{ color: 'var(--navy)', marginBottom: '.6rem' }}>🏛️ Conferences ({globalResults.conferences.length})</h4>
+              <div className="table-scroll">
+                <table>
+                  <thead><tr><th>Title</th><th>Location</th><th>Start Date</th><th>End Date</th></tr></thead>
+                  <tbody>
+                    {globalResults.conferences.map(c => (
+                      <tr key={c.id}>
+                        <td><strong>{c.title}</strong></td>
+                        <td>{c.location}</td>
+                        <td>{c.start_date}</td>
+                        <td>{c.end_date}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {globalResults.doctors.length === 0 && globalResults.invitations.length === 0 && globalResults.conferences.length === 0 && (
+            <p className="muted">No results found for "{globalSearch}"</p>
+          )}
+        </div>
+      )}
       {tab === 'overview' && (
         <div className="stat-cards">
           <div className="acard"><span className="acard-num">{doctors.length}</span><span className="acard-lbl">{t('admin_total_doctors')}</span></div>

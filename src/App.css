@@ -289,3 +289,10 @@ img{max-width:100%;display:block}
   .doc-grid{grid-template-columns:1fr}
   .inv-row{flex-direction:column;gap:.6rem;align-items:flex-start}
 }
+
+/* Global search bar */
+.global-search-bar{display:flex;align-items:center;gap:.6rem;background:#fff;border:2px solid var(--teal);border-radius:12px;padding:.5rem 1rem;margin-bottom:1.2rem}
+.global-search-icon{font-size:1.1rem;color:var(--teal)}
+.global-search-input{flex:1;border:none;outline:none;font-size:1rem;font-family:inherit;color:var(--ink)}
+.global-search-clear{background:none;color:var(--muted);font-size:1rem;padding:.2rem .4rem}
+.global-search-clear:hover{color:var(--navy)}

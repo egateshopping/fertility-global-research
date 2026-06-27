@@ -175,7 +175,7 @@ const translations = {
     nav_admin: 'Admin',
     nav_login: 'Sign in',
     nav_logout: 'Sign out',
-    hero_sub: 'Global Fertility Research Association',
+    hero_sub: 'Fertility Global Research Association',
     hero_tag: 'Advancing Fertility Science Worldwide',
     hero_cta_about: 'About the association',
     hero_cta_login: 'Doctor sign in',

@@ -69,3 +69,17 @@ ALTER TABLE member_activities DISABLE ROW LEVEL SECURITY;
 
 -- 7) Add cert_number column to certificate_requests
 ALTER TABLE certificate_requests ADD COLUMN IF NOT EXISTS cert_number TEXT;
+
+-- 8) Profile edit requests table
+CREATE TABLE IF NOT EXISTS profile_edit_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  doctor_id UUID REFERENCES doctors(id) ON DELETE CASCADE,
+  requested_changes JSONB NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+ALTER TABLE profile_edit_requests DISABLE ROW LEVEL SECURITY;
+
+-- 9) Add event_type to conferences
+ALTER TABLE conferences ADD COLUMN IF NOT EXISTS event_type TEXT DEFAULT 'conference';
+-- event_type values: 'conference' | 'workshop' | 'seminar'

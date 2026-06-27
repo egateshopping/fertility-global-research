@@ -17,6 +17,7 @@ export default function AdminDashboard() {
   const [invitationRequests, setInvitationRequests] = useState([])
   const [certRequests, setCertRequests] = useState([])
   const [memberActivities, setMemberActivities] = useState([])
+  const [editRequests, setEditRequests] = useState([])
 
   // doctor search/filter
   const [search, setSearch] = useState('')
@@ -41,7 +42,7 @@ export default function AdminDashboard() {
 
   useEffect(() => { refreshAll() }, [])
 
-  const refreshAll = () => { fetchDoctors(); fetchConferences(); fetchInvitations(); fetchReports(); fetchPending(); fetchInvitationRequests(); fetchCertRequests(); fetchMemberActivities() }
+  const refreshAll = () => { fetchDoctors(); fetchConferences(); fetchInvitations(); fetchReports(); fetchPending(); fetchInvitationRequests(); fetchCertRequests(); fetchMemberActivities(); fetchEditRequests() }
   const fetchDoctors = async () => { const { data } = await supabase.from('doctors').select('*').order('created_at', { ascending: false }); setDoctors(data || []) }
   const fetchConferences = async () => { const { data } = await supabase.from('conferences').select('*'); setConferences(data || []) }
   const fetchInvitations = async () => { const { data } = await supabase.from('invitations').select('*').order('created_at', { ascending: false }); setInvitations(data || []) }
@@ -50,6 +51,7 @@ export default function AdminDashboard() {
   const fetchInvitationRequests = async () => { const { data } = await supabase.from('invitation_requests').select('*').order('created_at', { ascending: false }); setInvitationRequests(data || []) }
   const fetchCertRequests = async () => { const { data } = await supabase.from('certificate_requests').select('*, doctors(full_name, email)').order('created_at', { ascending: false }); setCertRequests(data || []) }
   const fetchMemberActivities = async () => { const { data } = await supabase.from('member_activities').select('*').order('created_at', { ascending: false }); setMemberActivities(data || []) }
+  const fetchEditRequests = async () => { const { data } = await supabase.from('profile_edit_requests').select('*, doctors(full_name, email)').order('created_at', { ascending: false }); setEditRequests(data || []) }
 
   // ---------- filters ----------
   const doGlobalSearch = (q) => {
@@ -236,6 +238,15 @@ export default function AdminDashboard() {
   const rejectDoctor = async (id) => { if (confirm('Reject this membership?')) { await supabase.from('doctors').update({ status: 'rejected' }).eq('id', id); fetchPending() } }
   const approveCert = async (id) => { await supabase.from('certificate_requests').update({ status: 'approved', issued_date: new Date().toISOString().split('T')[0] }).eq('id', id); fetchCertRequests() }
   const deleteActivity = async (id) => { if (confirm('Delete this activity?')) { await supabase.from('member_activities').delete().eq('id', id); fetchMemberActivities() } }
+  const applyEditRequest = async (req) => {
+    await supabase.from('doctors').update(req.requested_changes).eq('id', req.doctor_id)
+    await supabase.from('profile_edit_requests').update({ status: 'approved' }).eq('id', req.id)
+    fetchEditRequests(); fetchDoctors()
+  }
+  const rejectEditRequest = async (id) => {
+    await supabase.from('profile_edit_requests').update({ status: 'rejected' }).eq('id', id)
+    fetchEditRequests()
+  }
 
   // Issue invitation directly from a request
   const issueFromRequest = async (request) => {
@@ -522,27 +533,7 @@ export default function AdminDashboard() {
       {tab === 'invitations' && (
         <div className="panel">
           <h3>الدعوات الصادرة</h3>
-          <div className="table-scroll">
-            <table>
-              <thead><tr><th>{t('admin_doctor')}</th><th>{t('admin_inv_number')}</th><th>{t('admin_conf_name')}</th><th>الإصدار</th><th>{t('admin_actions')}</th></tr></thead>
-              <tbody>
-                {invitations.map(i => {
-                  const d = doctors.find(x => x.id === i.doctor_id)
-                  const c = conferences.find(x => x.id === i.conference_id)
-                  return (
-                    <tr key={i.id}>
-                      <td>{d?.full_name || '—'}</td><td>{i.invitation_number}</td><td>{c?.title || '—'}</td><td>{i.issue_date}</td>
-                      <td className="row-actions">
-                        <button className="mini" onClick={() => reprint(i)}>PDF</button>
-                        <button className="mini danger" onClick={() => deleteInvitation(i.id)}>حذف</button>
-                      </td>
-                    </tr>
-                  )
-                })}
-                {invitations.length === 0 && <tr><td colSpan="5" className="muted center-td">لا توجد دعوات</td></tr>}
-              </tbody>
-            </table>
-          </div>
+          <InvSearch doctors={doctors} conferences={conferences} invitations={invitations} onDelete={deleteInvitation} onReprint={reprint} />
         </div>
       )}
 
@@ -718,3 +709,100 @@ export default function AdminDashboard() {
     </div>
   )
 }
+
+      {/* EDIT REQUESTS */}
+      {tab === 'edit-requests' && (
+        <div className="panel">
+          <h3>Profile Edit Requests</h3>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Doctor</th><th>Requested Changes</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>
+                {editRequests.map(r => (
+                  <tr key={r.id}>
+                    <td>{r.doctors?.full_name || '—'}</td>
+                    <td style={{ fontSize: '.82rem', maxWidth: 200 }}>
+                      {Object.entries(r.requested_changes || {}).map(([k, v]) => (
+                        <div key={k}><strong>{k}:</strong> {v}</div>
+                      ))}
+                    </td>
+                    <td>{(r.created_at || '').split('T')[0]}</td>
+                    <td><span style={{ color: r.status === 'approved' ? '#27ae60' : r.status === 'rejected' ? '#e74c3c' : '#f39c12', fontWeight: 700 }}>{r.status}</span></td>
+                    <td className="row-actions">
+                      {r.status === 'pending' && (<>
+                        <button className="mini admin-btn" onClick={() => applyEditRequest(r)}>✅ Apply</button>
+                        <button className="mini danger" onClick={() => rejectEditRequest(r.id)}>❌ Reject</button>
+                      </>)}
+                    </td>
+                  </tr>
+                ))}
+                {editRequests.length === 0 && <tr><td colSpan="5" className="muted center-td">No edit requests</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+
+function InvSearch({ doctors, conferences, invitations, onDelete, onReprint }) {
+  const [q, setQ] = React.useState('')
+  const filtered = invitations.filter(i => {
+    if (!q.trim()) return true
+    const s = q.toLowerCase()
+    const d = doctors.find(x => x.id === i.doctor_id)
+    const c = conferences.find(x => x.id === i.conference_id)
+    return (
+      (i.invitation_number || '').toLowerCase().includes(s) ||
+      (d?.full_name || '').toLowerCase().includes(s) ||
+      (d?.passport_number || '').toLowerCase().includes(s) ||
+      (c?.title || '').toLowerCase().includes(s)
+    )
+  })
+  return (
+    <>
+      <div className="global-search-bar" style={{ marginBottom: '1rem' }}>
+        <span className="global-search-icon">🔍</span>
+        <input className="global-search-input"
+          placeholder="Search by name, invitation number, or conference..."
+          value={q} onChange={e => setQ(e.target.value)} />
+        {q && <button className="global-search-clear" onClick={() => setQ('')}>✕</button>}
+      </div>
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Doctor</th><th>Invitation No.</th><th>Conference</th><th>Issue Date</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {filtered.map(i => {
+              const d = doctors.find(x => x.id === i.doctor_id)
+              const c = conferences.find(x => x.id === i.conference_id)
+              return (
+                <tr key={i.id}>
+                  <td>{d?.full_name || '—'}</td>
+                  <td><strong>{i.invitation_number}</strong></td>
+                  <td>{c?.title || '—'}</td>
+                  <td>{i.issue_date}</td>
+                  <td className="row-actions">
+                    <button className="mini" onClick={() => onReprint(i)}>PDF</button>
+                    <button className="mini danger" onClick={() => onDelete(i.id)}>حذف</button>
+                  </td>
+                </tr>
+              )
+            })}
+            {filtered.length === 0 && (
+              <tr><td colSpan="5" className="muted center-td">
+                {invitations.length === 0 ? 'No invitations yet' : `No results for "${q}"`}
+              </td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <p className="muted" style={{ marginTop: '.6rem', fontSize: '.85rem' }}>
+        Showing {filtered.length} of {invitations.length} invitations
+      </p>
+    </>
+  )
+}
+
+// Edit Requests tab content - injected via check in main render
+// (handled inline below)

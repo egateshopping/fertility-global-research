@@ -9,6 +9,7 @@ import NewsActivitiesPage from './pages/NewsActivitiesPage'
 import HomePage from './pages/HomePage'
 import ReportPage from './pages/ReportPage'
 import TermsPage from './pages/TermsPage'
+import VerifyPage from './pages/VerifyPage'
 import { useLang } from './i18n.jsx'
 import './App.css'
 
@@ -30,6 +31,9 @@ export default function App() {
   const [doctor, setDoctor] = useState(null)
   const [authView, setAuthView] = useState(null)
   const [recovery, setRecovery] = useState(false)
+  // Check for verify URL on load
+  const verifyMatch = window.location.pathname.match(/\/verify\/([A-Z0-9-]+)/)
+  const [verifyNum] = useState(verifyMatch ? verifyMatch[1] : null)
 
   // Handle internal navigation events (e.g. from terms link in register)
   useEffect(() => {
@@ -102,6 +106,18 @@ export default function App() {
           <div className="auth-ok" style={{marginTop:'1rem'}}>⏳ Pending Approval</div>
           <button className="auth-back" style={{marginTop:'1.5rem'}} onClick={handleLogout}>Sign Out</button>
         </div>
+      </div>
+    )
+  }
+
+  // Public verify page - no auth needed
+  if (verifyNum) {
+    return (
+      <div className="page-wrap" style={{ maxWidth: 700, margin: '0 auto', padding: '1rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <img src="/logo.png" alt="" style={{ width: 80 }} />
+        </div>
+        <VerifyPage invNumber={verifyNum} />
       </div>
     )
   }
@@ -181,6 +197,7 @@ export default function App() {
         {currentPage === 'dir_medical' && <div className="page-wrap"><DoctorDirectory profession="medical" /></div>}
         {currentPage === 'report' && <div className="page-wrap"><ReportPage /></div>}
         {currentPage === 'terms' && <div className="page-wrap"><TermsPage /></div>}
+        {currentPage === 'verify' && <div className="page-wrap"><VerifyPage invNumber={verifyNum} /></div>}
         {currentPage === 'blog' && <div className="page-wrap"><BlogPage isAdmin={isAdmin} /></div>}
         {currentPage === 'dashboard' && user && !isAdmin && <div className="page-wrap"><DoctorDashboard doctor={doctor} /></div>}
         {currentPage === 'admin' && user && isAdmin && <div className="page-wrap"><AdminDashboard /></div>}

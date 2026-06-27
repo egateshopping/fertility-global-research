@@ -706,9 +706,6 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
-    </div>
-  )
-}
 
       {/* EDIT REQUESTS */}
       {tab === 'edit-requests' && (
@@ -743,6 +740,9 @@ export default function AdminDashboard() {
         </div>
       )}
 
+    </div>
+  )
+}
 
 function InvSearch({ doctors, conferences, invitations, onDelete, onReprint }) {
   const [q, setQ] = React.useState('')
@@ -804,5 +804,3 @@ function InvSearch({ doctors, conferences, invitations, onDelete, onReprint }) {
   )
 }
 
-// Edit Requests tab content - injected via check in main render
-// (handled inline below)

@@ -93,22 +93,42 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
 
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(9)
-  const toLines = []
-  if (doctor.address)       toLines.push(doctor.address)
-  if (doctor.city && doctor.governorate) toLines.push(`${doctor.city}, ${doctor.governorate}`)
-  else if (doctor.city)     toLines.push(doctor.city)
-  if (doctor.nationality)   toLines.push(doctor.nationality)
-  if (doctor.date_of_birth) toLines.push(`DOB: ${doctor.date_of_birth}`)
-  if (doctor.specialty)     toLines.push(doctor.specialty)
-  if (doctor.hospital)      toLines.push(doctor.hospital)
-  if (doctor.passport_number && doctor.passport_number !== 'N/A')
-    toLines.push(`Passport No.: ${doctor.passport_number}`)
-  if (doctor.syndicate_id)  toLines.push(`Syndicate ID: ${doctor.syndicate_id}`)
 
-  toLines.forEach((line, i) => {
-    pdf.text(line, 20, y + 14 + i * 5.5)
+  // ── TWO COLUMN TO BLOCK ──────────────────────────────────────────────────
+  const leftFields = []
+  const cityLine = [doctor.city, doctor.governorate].filter(Boolean).join(', ')
+  if (doctor.address) leftFields.push(['Address:', doctor.address])
+  if (cityLine) leftFields.push(['City:', cityLine])
+  if (doctor.nationality) leftFields.push(['Nationality:', doctor.nationality])
+  if (doctor.hospital) leftFields.push(['Hospital:', doctor.hospital])
+
+  const rightFields = []
+  if (doctor.date_of_birth) rightFields.push(['DOB:', doctor.date_of_birth])
+  if (doctor.specialty) rightFields.push(['Specialty:', doctor.specialty])
+  if (doctor.passport_number && doctor.passport_number !== 'N/A')
+    rightFields.push(['Passport No.:', doctor.passport_number])
+  if (doctor.syndicate_id) rightFields.push(['Syndicate ID:', doctor.syndicate_id])
+
+  const maxRows = Math.max(leftFields.length, rightFields.length)
+
+  pdf.setFontSize(8.5)
+  leftFields.forEach(([label, value], i) => {
+    pdf.setFont('Helvetica', 'bold'); pdf.setTextColor(...grey)
+    pdf.text(label, 20, y + 14 + i * 5.5)
+    pdf.setFont('Helvetica', 'normal'); pdf.setTextColor(...black)
+    const shortened = pdf.splitTextToSize(value, 80)[0]
+    pdf.text(shortened, 44, y + 14 + i * 5.5)
+  })
+  rightFields.forEach(([label, value], i) => {
+    pdf.setFont('Helvetica', 'bold'); pdf.setTextColor(...grey)
+    pdf.text(label, 112, y + 14 + i * 5.5)
+    pdf.setFont('Helvetica', 'normal'); pdf.setTextColor(...black)
+    const shortened = pdf.splitTextToSize(value, 75)[0]
+    pdf.text(shortened, 136, y + 14 + i * 5.5)
   })
 
+  // Ref number top right
+  pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(8.5)
   pdf.setTextColor(...grey)
   pdf.text(`Ref: ${invitation.invitation_number}`, 190, y + 7, { align: 'right' })

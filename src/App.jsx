@@ -10,6 +10,7 @@ import HomePage from './pages/HomePage'
 import ReportPage from './pages/ReportPage'
 import TermsPage from './pages/TermsPage'
 import VerifyPage from './pages/VerifyPage'
+import CertVerifyPage from './pages/CertVerifyPage'
 import { useLang } from './i18n.jsx'
 import './App.css'
 
@@ -33,6 +34,7 @@ export default function App() {
   const [recovery, setRecovery] = useState(false)
   // Check for verify URL on load
   const verifyMatch = window.location.pathname.match(/\/verify\/([A-Z0-9-]+)/)
+  const certVerifyMatch = window.location.pathname.match(/\/verify\/cert\/([A-Z0-9-]+)/)
   const [verifyNum] = useState(verifyMatch ? verifyMatch[1] : null)
 
   // Handle internal navigation events (e.g. from terms link in register)
@@ -138,7 +140,20 @@ export default function App() {
     )
   }
 
-  // Public verify page - no auth needed
+  // Public cert verify page
+  if (certVerifyMatch) {
+    const certNum = certVerifyMatch[1]
+    return (
+      <div className="page-wrap" style={{ maxWidth: 700, margin: '0 auto', padding: '1rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <img src="/logo.png" alt="" style={{ width: 80 }} />
+        </div>
+        <CertVerifyPage certNumber={certNum} />
+      </div>
+    )
+  }
+
+  // Public invitation verify page - no auth needed
   if (verifyNum) {
     return (
       <div className="page-wrap" style={{ maxWidth: 700, margin: '0 auto', padding: '1rem' }}>

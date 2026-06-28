@@ -86,3 +86,9 @@ ALTER TABLE conferences ADD COLUMN IF NOT EXISTS event_type TEXT DEFAULT 'confer
 
 -- 10) Rejection reason column for doctors
 ALTER TABLE doctors ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+
+-- 11) Visible column for members (directory display control)
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS visible BOOLEAN DEFAULT TRUE;
+
+-- 12) Update invitation letter text to support workshops
+-- (handled in code, no SQL needed)

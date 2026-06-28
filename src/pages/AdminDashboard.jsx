@@ -18,6 +18,9 @@ export default function AdminDashboard() {
   const [certRequests, setCertRequests] = useState([])
   const [memberActivities, setMemberActivities] = useState([])
   const [editRequests, setEditRequests] = useState([])
+  const [editInvitation, setEditInvitation] = useState(null)
+  const [editCert, setEditCert] = useState(null)
+  const [editConference, setEditConference] = useState(null)
 
   // doctor search/filter
   const [search, setSearch] = useState('')
@@ -249,6 +252,12 @@ export default function AdminDashboard() {
   }
   const deleteInvitation = async (id) => { if (confirm('حذف هذه الدعوة؟')) { await supabase.from('invitations').delete().eq('id', id); fetchInvitations() } }
   const deleteReport = async (id) => { if (confirm('حذف هذا البلاغ؟')) { await supabase.from('reports').delete().eq('id', id); fetchReports() } }
+  const toggleVisible = async (doctor) => {
+    const newVal = !doctor.visible
+    await supabase.from('doctors').update({ visible: newVal }).eq('id', doctor.id)
+    fetchDoctors()
+  }
+
   const approveDoctor = async (id) => {
     await supabase.from('doctors').update({ status: 'approved' }).eq('id', id)
     // Auto-create certificate record on approval
@@ -277,6 +286,38 @@ export default function AdminDashboard() {
     await supabase.from('profile_edit_requests').update({ status: 'approved' }).eq('id', req.id)
     fetchEditRequests(); fetchDoctors()
   }
+  const saveEditInvitation = async () => {
+    if (!editInvitation) return
+    const { id, doctor_id, conference_id, invitation_number, issue_date, travel_date } = editInvitation
+    await supabase.from('invitations').update({ doctor_id, conference_id, invitation_number, issue_date, travel_date }).eq('id', id)
+    setEditInvitation(null)
+    fetchInvitations()
+  }
+
+  const saveEditCert = async () => {
+    if (!editCert) return
+    const { id, issued_date, cert_number } = editCert
+    // Also update doctor specialty if changed
+    await supabase.from('certificate_requests').update({ issued_date, cert_number }).eq('id', id)
+    setEditCert(null)
+    fetchCertRequests()
+  }
+
+  const saveEditConference = async () => {
+    if (!editConference) return
+    const { id, title, location, start_date, end_date, description, event_type, registration_deadline } = editConference
+    await supabase.from('conferences').update({ title, location, start_date, end_date, description, event_type, registration_deadline }).eq('id', id)
+    setEditConference(null)
+    fetchConferences()
+  }
+
+  const deleteInvitationRequest = async (id) => {
+    if (confirm('Delete this invitation request?')) {
+      await supabase.from('invitation_requests').delete().eq('id', id)
+      fetchInvitationRequests()
+    }
+  }
+
   const rejectEditRequest = async (id) => {
     await supabase.from('profile_edit_requests').update({ status: 'rejected' }).eq('id', id)
     fetchEditRequests()
@@ -472,6 +513,14 @@ export default function AdminDashboard() {
                       >
                         {d.is_admin ? '🔴 إلغاء أدمن' : '🟢 تعيين أدمن'}
                       </button>
+                      <button
+                        className={d.visible === false ? 'mini' : 'mini danger'}
+                        style={{ background: d.visible === false ? '#e8f7ee' : '#fff3cd', color: d.visible === false ? '#1a7a4f' : '#856404' }}
+                        onClick={() => toggleVisible(d)}
+                        title={d.visible === false ? 'Show in directory' : 'Hide from directory'}
+                      >
+                        {d.visible === false ? '👁 Show' : '🙈 Hide'}
+                      </button>
                       <button className="mini" style={{background:'#e8f4ff',color:'#0B2E5C'}} onClick={async () => {
                         const cert = certRequests.find(r => r.doctor_id === d.id && r.status === 'approved')
                         if (!cert) { alert('No approved certificate for this doctor yet.'); return }
@@ -579,7 +628,7 @@ export default function AdminDashboard() {
       {tab === 'invitations' && (
         <div className="panel">
           <h3>الدعوات الصادرة</h3>
-          <InvSearch doctors={doctors} conferences={conferences} invitations={invitations} onDelete={deleteInvitation} onReprint={reprint} />
+          <InvSearch doctors={doctors} conferences={conferences} invitations={invitations} onDelete={deleteInvitation} onReprint={reprint} onEdit={setEditInvitation} />
         </div>
       )}
 
@@ -650,6 +699,7 @@ export default function AdminDashboard() {
                           ⚡ Issue
                         </button>
                       )}
+                      <button className="mini danger" onClick={() => deleteInvitationRequest(r.id)}>حذف</button>
                       <span style={{ fontSize: '.8rem', color: r.status === 'issued' ? '#27ae60' : '#f39c12', fontWeight: 700 }}>
                         {r.status === 'issued' ? '✅ Issued' : '⏳ Pending'}
                       </span>
@@ -679,6 +729,9 @@ export default function AdminDashboard() {
                     <td>
                       {r.status === 'pending' && (
                         <button className="mini admin-btn" onClick={() => approveCert(r.id)}>✅ Approve</button>
+                      )}
+                      {r.status === 'approved' && (
+                        <button className="mini" style={{background:'#e8f4ff',color:'#0B2E5C'}} onClick={() => setEditCert({...r})}>✏️ Edit</button>
                       )}
                       {r.status === 'approved' && r.issued_date && (() => {
                         const doc = doctors.find(d => d.id === r.doctor_id)
@@ -721,6 +774,81 @@ export default function AdminDashboard() {
       )}
 
 
+
+      {/* EDIT INVITATION MODAL */}
+      {editInvitation && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 style={{color:'var(--navy)',marginBottom:'1rem'}}>✏️ Edit Invitation</h3>
+            <p className="muted" style={{marginBottom:'1rem',fontSize:'.85rem'}}>Ref: <strong>{editInvitation.invitation_number}</strong> — same number will be kept</p>
+            <div style={{display:'flex',flexDirection:'column',gap:'.7rem'}}>
+              <label className="auth-label">Doctor</label>
+              <select className="auth-input" value={editInvitation.doctor_id} onChange={e => setEditInvitation({...editInvitation, doctor_id: e.target.value})}>
+                {doctors.filter(d=>d.status==='approved').map(d => <option key={d.id} value={d.id}>{(d.full_name||'').trim()}</option>)}
+              </select>
+              <label className="auth-label">Conference</label>
+              <select className="auth-input" value={editInvitation.conference_id} onChange={e => setEditInvitation({...editInvitation, conference_id: e.target.value})}>
+                {conferences.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+              </select>
+              <label className="auth-label">Issue Date</label>
+              <input className="auth-input" type="date" value={editInvitation.issue_date||''} onChange={e => setEditInvitation({...editInvitation, issue_date: e.target.value})} />
+              <label className="auth-label">Travel Date</label>
+              <input className="auth-input" type="date" value={editInvitation.travel_date||''} onChange={e => setEditInvitation({...editInvitation, travel_date: e.target.value})} />
+            </div>
+            <div className="two-col" style={{marginTop:'1rem'}}>
+              <button className="btn-primary" onClick={saveEditInvitation}>💾 Save & Reprint PDF</button>
+              <button className="btn-soft" onClick={() => setEditInvitation(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT CERTIFICATE MODAL */}
+      {editCert && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 style={{color:'var(--navy)',marginBottom:'1rem'}}>✏️ Edit Certificate</h3>
+            <div style={{display:'flex',flexDirection:'column',gap:'.7rem'}}>
+              <label className="auth-label">Certificate Number</label>
+              <input className="auth-input" value={editCert.cert_number||''} onChange={e => setEditCert({...editCert, cert_number: e.target.value})} />
+              <label className="auth-label">Issue Date</label>
+              <input className="auth-input" type="date" value={editCert.issued_date||''} onChange={e => setEditCert({...editCert, issued_date: e.target.value})} />
+            </div>
+            <div className="two-col" style={{marginTop:'1rem'}}>
+              <button className="btn-primary" onClick={saveEditCert}>💾 Save</button>
+              <button className="btn-soft" onClick={() => setEditCert(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT CONFERENCE MODAL */}
+      {editConference && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3 style={{color:'var(--navy)',marginBottom:'1rem'}}>✏️ Edit Conference / Event</h3>
+            <div style={{display:'flex',flexDirection:'column',gap:'.7rem'}}>
+              <input className="auth-input" placeholder="Title" value={editConference.title||''} onChange={e => setEditConference({...editConference, title: e.target.value})} />
+              <input className="auth-input" placeholder="Location" value={editConference.location||''} onChange={e => setEditConference({...editConference, location: e.target.value})} />
+              <select className="auth-input" value={editConference.event_type||'conference'} onChange={e => setEditConference({...editConference, event_type: e.target.value})}>
+                <option value="conference">Conference</option>
+                <option value="workshop">Workshop / ورشة عمل</option>
+                <option value="seminar">Seminar / ندوة</option>
+                <option value="meeting">Association Meeting / اجتماع إدارة</option>
+              </select>
+              <label className="auth-label">Start Date</label>
+              <input className="auth-input" type="date" value={editConference.start_date||''} onChange={e => setEditConference({...editConference, start_date: e.target.value})} />
+              <label className="auth-label">End Date</label>
+              <input className="auth-input" type="date" value={editConference.end_date||''} onChange={e => setEditConference({...editConference, end_date: e.target.value})} />
+              <input className="auth-input" placeholder="Description" value={editConference.description||''} onChange={e => setEditConference({...editConference, description: e.target.value})} />
+            </div>
+            <div className="two-col" style={{marginTop:'1rem'}}>
+              <button className="btn-primary" onClick={saveEditConference}>💾 Save</button>
+              <button className="btn-soft" onClick={() => setEditConference(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* VIEW FILES MODAL */}
       {viewDoctor && (
         <div className="modal-overlay" onClick={() => setViewDoctor(null)}>
@@ -801,7 +929,7 @@ export default function AdminDashboard() {
   )
 }
 
-function InvSearch({ doctors, conferences, invitations, onDelete, onReprint }) {
+function InvSearch({ doctors, conferences, invitations, onDelete, onReprint, onEdit }) {
   const [q, setQ] = React.useState('')
   const filtered = invitations.filter(i => {
     if (!q.trim()) return true
@@ -840,6 +968,7 @@ function InvSearch({ doctors, conferences, invitations, onDelete, onReprint }) {
                   <td>{c?.title || '—'}</td>
                   <td>{i.issue_date}</td>
                   <td className="row-actions">
+                    <button className="mini" style={{background:'#e8f4ff',color:'#0B2E5C'}} onClick={() => onEdit(i)}>✏️ Edit</button>
                     <button className="mini" onClick={() => onReprint(i)}>PDF</button>
                     <button className="mini danger" onClick={() => onDelete(i.id)}>حذف</button>
                   </td>

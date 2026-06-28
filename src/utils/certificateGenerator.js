@@ -190,6 +190,22 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   pdf.setTextColor(...grey)
   pdf.text('MBChB, MSc — President of Global Fertility Research', W / 2, 169, { align: 'center' })
 
+  // ── QR CODE — bottom right corner ─────────────────────────────────────────
+  try {
+    const QRCode = await import('qrcode')
+    const qr = await QRCode.default.toDataURL(
+      `https://fertility-global.org/verify/cert/${certNumber}`,
+      { width: 120, margin: 1, color: { dark: '#0B2E5C', light: '#FFFFFF' } }
+    )
+    if (qr) {
+      pdf.addImage(qr, 'PNG', W - 52, H - 55, 30, 30)
+      pdf.setFont('Helvetica', 'normal')
+      pdf.setFontSize(6)
+      pdf.setTextColor(...grey)
+      pdf.text('Scan to verify', W - 37, H - 23, { align: 'center' })
+    }
+  } catch (_) {}
+
   // ── BOTTOM GOLD BAR ───────────────────────────────────────────────────────
   pdf.setFillColor(...navy)
   pdf.rect(10, H - 22, W - 20, 12, 'F')

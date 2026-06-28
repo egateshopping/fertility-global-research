@@ -12,6 +12,7 @@ export function DoctorDirectory({ profession = 'doctor' }) {
 
   const fetchPeople = async () => {
     let query = supabase.from('doctors').select('*')
+    query = query.eq('status', 'approved').eq('visible', true)
     const { data } = await query
     // filter by profession (older records may have null profession => treat as doctor)
     const list = (data || []).filter(d => (d.profession || 'doctor') === profession)

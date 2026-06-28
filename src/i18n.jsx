@@ -9,7 +9,7 @@ const translations = {
     nav_about: 'عن الجمعية',
     nav_news: 'النشاطات',
     nav_conferences: 'المؤتمرات',
-    nav_directory: 'دليل الأطباء',
+    nav_directory: 'دليل الأعضاء',
     nav_profile: 'ملفي',
     nav_admin: 'لوحة التحكم',
     nav_login: 'دخول',
@@ -69,7 +69,7 @@ const translations = {
     prof_doctor: 'طبيب',
     prof_pharmacist: 'صيدلي',
     prof_medical: 'مهنة طبية أخرى',
-    dir_doctors: 'دليل الأطباء',
+    dir_doctors: 'دليل الأعضاء',
     dir_pharmacists: 'دليل الصيادلة',
     dir_medical: 'دليل المهن الطبية',
     report_btn: 'إبلاغ عن حساب وهمي',
@@ -93,7 +93,7 @@ const translations = {
 
     // Admin Dashboard
     admin_overview: 'الإحصائيات',
-    admin_doctors: 'الأطباء',
+    admin_doctors: 'الأعضاء',
     admin_conferences: 'المؤتمرات',
     admin_invite: 'إصدار دعوة',
     admin_invitations: 'الدعوات',
@@ -102,7 +102,7 @@ const translations = {
     admin_inv_requests: 'طلبات الدعوة',
     admin_certificates: 'الشهادات',
     admin_activities: 'نشاطات الأعضاء',
-    admin_total_doctors: 'طبيب مسجّل',
+    admin_total_doctors: 'عضو مسجّل',
     admin_total_invitations: 'دعوة صادرة',
     admin_total_conferences: 'مؤتمر',
     admin_total_countries: 'دولة',
@@ -160,7 +160,7 @@ const translations = {
     admin_reporter: 'بريد المُبلِّغ',
     admin_date: 'التاريخ',
     admin_status: 'الحالة',
-    admin_doctor: 'الطبيب',
+    admin_doctor: 'العضو',
     reg_done: 'تم إنشاء حسابك ✓', reg_redirect: 'جاري تحويلك لتسجيل الدخول...',
   },
   en: {
@@ -221,7 +221,7 @@ const translations = {
     prof_doctor: 'Doctor',
     prof_pharmacist: 'Pharmacist',
     prof_medical: 'Other medical profession',
-    dir_doctors: 'Doctors Directory',
+    dir_doctors: 'Members Directory',
     dir_pharmacists: 'Pharmacists Directory',
     dir_medical: 'Medical Professions Directory',
     report_btn: 'Report a fake account',
@@ -245,7 +245,7 @@ const translations = {
 
     // Admin Dashboard
     admin_overview: 'Overview',
-    admin_doctors: 'Doctors',
+    admin_doctors: 'Members',
     admin_conferences: 'Conferences',
     admin_invite: 'Issue Invitation',
     admin_invitations: 'Invitations',
@@ -254,7 +254,7 @@ const translations = {
     admin_inv_requests: 'Inv. Requests',
     admin_certificates: 'Certificates',
     admin_activities: 'Member Activities',
-    admin_total_doctors: 'Registered doctors',
+    admin_total_doctors: 'Registered members',
     admin_total_invitations: 'Invitations issued',
     admin_total_conferences: 'Conferences',
     admin_total_countries: 'Countries',
@@ -312,7 +312,7 @@ const translations = {
     admin_reporter: 'Reporter Email',
     admin_date: 'Date',
     admin_status: 'Status',
-    admin_doctor: 'Doctor',
+    admin_doctor: 'Member',
     reg_done: 'Account created ✓', reg_redirect: 'Redirecting to sign in...',
   }
 }

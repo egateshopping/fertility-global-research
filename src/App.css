@@ -296,3 +296,21 @@ img{max-width:100%;display:block}
 .global-search-input{flex:1;border:none;outline:none;font-size:1rem;font-family:inherit;color:var(--ink)}
 .global-search-clear{background:none;color:var(--muted);font-size:1rem;padding:.2rem .4rem}
 .global-search-clear:hover{color:var(--navy)}
+
+/* Multi-step registration */
+.reg-steps{display:flex;justify-content:center;gap:0;margin-bottom:1.5rem;position:relative}
+.reg-steps::before{content:'';position:absolute;top:16px;left:20%;right:20%;height:2px;background:var(--line);z-index:0}
+.reg-step{display:flex;flex-direction:column;align-items:center;gap:.3rem;flex:1;position:relative;z-index:1}
+.reg-step-num{width:32px;height:32px;border-radius:50%;background:var(--line);color:var(--muted);font-weight:700;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:.3s}
+.reg-step.active .reg-step-num{background:var(--teal);color:#fff}
+.reg-step.done .reg-step-num{background:var(--navy);color:#fff}
+.reg-step-label{font-size:.75rem;color:var(--muted);font-weight:600}
+.reg-step.active .reg-step-label{color:var(--teal)}
+.reg-step.done .reg-step-label{color:var(--navy)}
+
+/* Document upload box in registration */
+.doc-upload-box{display:flex;align-items:center;gap:1rem;background:var(--sky);border:2px dashed var(--line);border-radius:12px;padding:1rem;transition:.3s;margin-bottom:.7rem}
+.doc-upload-box--done{border-color:var(--teal);background:#e8f8f5;border-style:solid}
+.doc-upload-icon{font-size:1.8rem;flex-shrink:0}
+.doc-upload-info{flex:1;min-width:0}
+.doc-upload-info strong{display:block;color:var(--navy);font-size:.95rem}

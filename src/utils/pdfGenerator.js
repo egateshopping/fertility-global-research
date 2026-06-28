@@ -150,8 +150,9 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.setFontSize(10)
   pdf.text(`Dear Dr. ${(doctor.full_name || '').trim()},`, 20, y)
   y += 8
-  pdf.text('I am writing to invite you on behalf of Global Fertility Research to attend', 20, y); y += 5.5
-  pdf.text('and participate in the upcoming event:', 20, y); y += 8
+  const eventWord = (conference.event_type === 'workshop') ? 'workshop' : (conference.event_type === 'seminar') ? 'seminar' : (conference.event_type === 'meeting') ? 'association meeting' : 'conference'
+  pdf.text(`I am writing to invite you on behalf of Global Fertility Research to attend`, 20, y); y += 5.5
+  pdf.text(`and participate in the upcoming ${eventWord}:`, 20, y); y += 8
 
   // Conference details — NO BOX, plain bold text
   pdf.setFont('Helvetica', 'bold')
@@ -171,7 +172,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.setTextColor(...black)
 
   const paras = [
-    `The programme will include a variety of scientific presentations covering the recent advances in fertility medicine and reproductive science. There will be workshops on ${conference.start_date || 'the first day'} to cover medical education and training.`,
+    `The programme will include a variety of scientific presentations covering the recent advances in fertility medicine and reproductive science. There will be sessions on ${conference.start_date || 'the first day'} to cover medical education and training.`,
     `Global Fertility Research was established to maintain and strengthen active interaction within the medical community in the UK and internationally. The participation of consultants and experts from across the world helps to promote advances in healthcare services.`,
     `This medical conference will bring together leading medical professionals from around the world to discuss the latest advancements, research findings, and best practices in Medicine and fertility science.`,
     `We believe your expertise as ${doctor.specialty ? 'a specialist in ' + doctor.specialty : 'a qualified medical professional'} at ${doctor.hospital || 'your institution'} would be a valuable addition to the conference. Your participation and input in the scientific programme will help to discuss the challenges facing health professionals and healthcare services.`,
@@ -239,7 +240,8 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.setTextColor(...navy)
   pdf.setFont('Helvetica', 'bold')
   pdf.setFontSize(14)
-  pdf.text('Confirmation of Registration', 105, 50, { align: 'center' })
+  const p2EventWord = (conference.event_type === 'workshop') ? 'Workshop Registration' : (conference.event_type === 'seminar') ? 'Seminar Registration' : (conference.event_type === 'meeting') ? 'Meeting Registration' : 'Confirmation of Registration'
+  pdf.text(p2EventWord, 105, 50, { align: 'center' })
   pdf.setDrawColor(...teal)
   pdf.setLineWidth(0.6)
   pdf.line(20, 53, 190, 53)

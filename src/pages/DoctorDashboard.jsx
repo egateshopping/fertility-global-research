@@ -131,6 +131,10 @@ export default function DoctorDashboard({ doctor }) {
   const submitInvitationRequest = async (e) => {
     e.preventDefault()
     if (!selectedConfId) { alert('Please select a conference'); return }
+    if (!doctor?.id || !doctor?.email) {
+      alert('Your profile data is not fully loaded. Please refresh the page and try again.')
+      return
+    }
     setSubmittingReq(true)
     try {
       // Check for duplicate

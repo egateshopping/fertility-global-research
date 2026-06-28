@@ -199,7 +199,18 @@ export default function App() {
         {currentPage === 'terms' && <div className="page-wrap"><TermsPage /></div>}
         {currentPage === 'verify' && <div className="page-wrap"><VerifyPage invNumber={verifyNum} /></div>}
         {currentPage === 'blog' && <div className="page-wrap"><BlogPage isAdmin={isAdmin} /></div>}
-        {currentPage === 'dashboard' && user && !isAdmin && <div className="page-wrap"><DoctorDashboard doctor={doctor} /></div>}
+        {currentPage === 'dashboard' && user && !isAdmin && doctor && <div className="page-wrap"><DoctorDashboard doctor={doctor} /></div>}
+        {currentPage === 'dashboard' && user && !isAdmin && !doctor && (
+          <div className="auth-screen">
+            <div className="auth-card center">
+              <img src="/logo.png" alt="" className="auth-logo" />
+              <h2 className="auth-title">Profile Not Found</h2>
+              <p className="auth-sub">Your account exists but your profile was not found in our system. Please contact the association administrator.</p>
+              <p className="muted" style={{fontSize:'.85rem',marginTop:'.5rem'}}>{user.email}</p>
+              <button className="auth-back" style={{marginTop:'1.5rem'}} onClick={handleLogout}>Sign Out</button>
+            </div>
+          </div>
+        )}
         {currentPage === 'admin' && user && isAdmin && <div className="page-wrap"><AdminDashboard /></div>}
       </main>
 

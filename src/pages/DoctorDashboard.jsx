@@ -100,9 +100,13 @@ export default function DoctorDashboard({ doctor }) {
   }
 
   useEffect(() => {
+    // Conferences don't need doctor.id - fetch always
+    fetchConferences()
+  }, [])
+
+  useEffect(() => {
     if (!doctor?.id) return
     fetchDocuments()
-    fetchConferences()
     fetchInvitations()
     fetchActivities()
     fetchInvRequests()

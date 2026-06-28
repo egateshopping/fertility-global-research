@@ -19,16 +19,17 @@ const loadImage = (url, maxW = 300, quality = 0.85) =>
     img.src = url
   })
 
-const loadSignatureTransparent = (url) =>
+const loadSignatureTransparent = (url, maxW = 300) =>
   new Promise((resolve) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
     img.onload = () => {
+      const scale = img.width > maxW ? maxW / img.width : 1
       const canvas = document.createElement('canvas')
-      canvas.width = img.width; canvas.height = img.height
+      canvas.width = Math.round(img.width * scale)
+      canvas.height = Math.round(img.height * scale)
       const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0)
-      const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       for (let i = 0; i < imageData.data.length; i += 4) {
         if ((imageData.data[i] + imageData.data[i+1] + imageData.data[i+2]) / 3 > 180)
@@ -87,7 +88,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
 
   // Logo
   try {
-    const logo = await loadImage('/logo.png', 300, 0.9)
+    const logo = await loadImage('/logo.png', 150, 0.6)
     if (logo) pdf.addImage(logo, 'JPEG', 15, 11, 26, 26)
   } catch (_) {}
 
@@ -102,7 +103,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
 
   // ── WATERMARK LOGO ────────────────────────────────────────────────────────
   try {
-    const logo = await loadImage('/logo.png', 400, 0.3)
+    const logo = await loadImage('/logo.png', 150, 0.25)
     if (logo) {
       pdf.saveGraphicsState()
       // Draw watermark - centered, large, very faint
@@ -170,7 +171,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
 
   // ── SIGNATURE ─────────────────────────────────────────────────────────────
   try {
-    const sig = await loadSignatureTransparent('/signature.png')
+    const sig = await loadSignatureTransparent('/signature.png', 300)
     if (sig) pdf.addImage(sig, 'PNG', W/2 - 25, 136, 50, 18)
   } catch (_) {}
 

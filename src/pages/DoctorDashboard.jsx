@@ -68,6 +68,10 @@ export default function DoctorDashboard({ doctor }) {
   const [postingActivity, setPostingActivity] = useState(false)
   // Invitation requests
   const [invRequests, setInvRequests] = useState([])
+  const [selectedConfId, setSelectedConfId] = useState('')
+  const [invReqMsg, setInvReqMsg] = useState('')
+  const [submittingReq, setSubmittingReq] = useState(false)
+  const [reqSent, setReqSent] = useState(false)
   const [certRecord, setCertRecord] = useState(null)
 
   const fetchCertRecord = async () => {

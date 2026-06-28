@@ -155,12 +155,14 @@ export default function AdminDashboard() {
 
   // ---------- instant issue (no review step) ----------
   const instantIssue = async () => {
-    if (!inv.doctorId || !inv.conferenceId || !inv.travelDate) {
-      alert('اختر الطبيب والمؤتمر وتاريخ السفر أولاً')
-      return
-    }
+    if (!inv.doctorId) { alert('Please select a doctor first'); return }
+    if (!inv.conferenceId) { alert('Please select a conference first'); return }
+
     const doctor = doctors.find(d => d.id === inv.doctorId)
     const conference = conferences.find(c => c.id === inv.conferenceId)
+    if (!doctor) { alert('Doctor not found'); return }
+    if (!conference) { alert('Conference not found'); return }
+
     const invNumber = inv.number || generateInvitationNumber()
     const issueDate = inv.issueDate || new Date().toISOString().split('T')[0]
 
@@ -169,17 +171,24 @@ export default function AdminDashboard() {
       conference_id: inv.conferenceId,
       invitation_number: invNumber,
       issue_date: issueDate,
-      travel_date: inv.travelDate,
+      travel_date: inv.travelDate || null,
       status: 'issued'
     }]).select()
 
-    if (error) { alert(error.message); return }
+    if (error) { alert('Error: ' + error.message); return }
 
-    const pdf = await generateInvitationPDF(doctor, conference, data[0])
-    pdf.save(`${invNumber}.pdf`)
+    try {
+      const pdf = await generateInvitationPDF(doctor, conference, data[0])
+      pdf.save(`${invNumber}.pdf`)
+    } catch (err) {
+      alert('PDF error: ' + err.message)
+      return
+    }
+
     setInv({ doctorId: '', conferenceId: '', travelDate: '', issueDate: new Date().toISOString().split('T')[0], number: '' })
     setInvDoctorEdit(null)
     fetchInvitations()
+    alert('✅ Invitation issued and PDF downloaded!')
   }
 
   // ---------- admin assignment ----------
@@ -215,8 +224,16 @@ export default function AdminDashboard() {
   const reprint = async (invitation) => {
     const doctor = doctors.find(d => d.id === invitation.doctor_id)
     const conference = conferences.find(c => c.id === invitation.conference_id)
-    const pdf = await generateInvitationPDF(doctor, conference, invitation)
-    pdf.save(`${invitation.invitation_number}.pdf`)
+    if (!doctor) { alert('Doctor data not found'); return }
+    if (!conference) { alert('Conference data not found'); return }
+    // Trim any trailing spaces from doctor name
+    const cleanDoctor = { ...doctor, full_name: (doctor.full_name || '').trim() }
+    try {
+      const pdf = await generateInvitationPDF(cleanDoctor, conference, invitation)
+      pdf.save(`${invitation.invitation_number}.pdf`)
+    } catch (err) {
+      alert('PDF generation error: ' + err.message)
+    }
   }
   const deleteInvitation = async (id) => { if (confirm('حذف هذه الدعوة؟')) { await supabase.from('invitations').delete().eq('id', id); fetchInvitations() } }
   const deleteReport = async (id) => { if (confirm('حذف هذا البلاغ؟')) { await supabase.from('reports').delete().eq('id', id); fetchReports() } }
@@ -491,20 +508,25 @@ export default function AdminDashboard() {
       {tab === 'invite' && (
         <div className="panel">
           <h3>إصدار دعوة جديدة</h3>
+          <p className="muted" style={{ marginBottom: '1rem', fontSize: '.88rem' }}>
+            اختر الطبيب والمؤتمر ثم اضغط "⚡ إصدار فوري" — تاريخ السفر اختياري
+          </p>
           <div className="inv-grid">
-            <label>الطبيب
+            <label>الطبيب *
               <select className="auth-input" value={inv.doctorId} onChange={e => setInv({ ...inv, doctorId: e.target.value })}>
-                <option value="">— اختر —</option>
-                {doctors.map(d => <option key={d.id} value={d.id}>{d.full_name} — {d.specialty}</option>)}
+                <option value="">— اختر الطبيب —</option>
+                {doctors.filter(d => d.status === 'approved').map(d => (
+                  <option key={d.id} value={d.id}>{(d.full_name || '').trim()} — {d.specialty}</option>
+                ))}
               </select>
             </label>
-            <label>المؤتمر
+            <label>المؤتمر *
               <select className="auth-input" value={inv.conferenceId} onChange={e => setInv({ ...inv, conferenceId: e.target.value })}>
-                <option value="">— اختر —</option>
-                {conferences.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                <option value="">— اختر المؤتمر —</option>
+                {conferences.map(c => <option key={c.id} value={c.id}>{c.title} ({c.start_date})</option>)}
               </select>
             </label>
-            <label>تاريخ السفر
+            <label>تاريخ السفر (اختياري)
               <input className="auth-input" type="date" value={inv.travelDate} onChange={e => setInv({ ...inv, travelDate: e.target.value })} />
             </label>
             <label>تاريخ الإصدار

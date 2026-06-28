@@ -132,30 +132,37 @@ export default function DoctorDashboard({ doctor }) {
     e.preventDefault()
     if (!selectedConfId) { alert('Please select a conference'); return }
     setSubmittingReq(true)
-    // Check for duplicate
-    const { data: existing } = await supabase.from('invitation_requests')
-      .select('id').eq('email', doctor.email).eq('conference_id', selectedConfId).eq('status', 'new')
-    if (existing && existing.length > 0) {
-      alert('You already have a pending request for this conference.')
-      setSubmittingReq(false); return
+    try {
+      // Check for duplicate
+      const { data: existing } = await supabase.from('invitation_requests')
+        .select('id').eq('email', doctor.email).eq('conference_id', selectedConfId).eq('status', 'new')
+      if (existing && existing.length > 0) {
+        alert('You already have a pending request for this conference.')
+        setSubmittingReq(false); return
+      }
+      const { error } = await supabase.from('invitation_requests').insert([{
+        full_name: (doctor.full_name || '').trim(),
+        email: doctor.email,
+        specialty: doctor.specialty || '',
+        passport_number: doctor.passport_number || '',
+        conference_id: selectedConfId,
+        message: invReqMsg,
+        status: 'new'
+      }])
+      if (error) {
+        alert('Error submitting request: ' + error.message)
+      } else {
+        setReqSent(true)
+        setSelectedConfId('')
+        setInvReqMsg('')
+        fetchInvRequests()
+        setTimeout(() => setReqSent(false), 4000)
+      }
+    } catch (err) {
+      alert('Unexpected error: ' + err.message)
+    } finally {
+      setSubmittingReq(false)
     }
-    const { error } = await supabase.from('invitation_requests').insert([{
-      full_name: doctor.full_name,
-      email: doctor.email,
-      specialty: doctor.specialty,
-      passport_number: doctor.passport_number,
-      conference_id: selectedConfId,
-      message: invReqMsg,
-      status: 'new'
-    }])
-    if (!error) {
-      setReqSent(true)
-      setSelectedConfId('')
-      setInvReqMsg('')
-      fetchInvRequests()
-      setTimeout(() => setReqSent(false), 4000)
-    }
-    setSubmittingReq(false)
   }
 
   const fetchActivities = async () => {

@@ -148,26 +148,22 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   // Dear
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(10)
-  pdf.text(`Dear Dr. ${doctor.full_name},`, 20, y)
+  pdf.text(`Dear Dr. ${(doctor.full_name || '').trim()},`, 20, y)
   y += 8
   pdf.text('I am writing to invite you on behalf of Global Fertility Research to attend', 20, y); y += 5.5
-  pdf.text('and participate in the upcoming event:', 20, y); y += 10
+  pdf.text('and participate in the upcoming event:', 20, y); y += 8
 
-  // Conference highlight box
-  pdf.setFillColor(...skyBg)
-  pdf.roundedRect(30, y - 3, 150, 26, 3, 3, 'F')
-  pdf.setDrawColor(...teal)
-  pdf.setLineWidth(0.5)
-  pdf.roundedRect(30, y - 3, 150, 26, 3, 3, 'S')
+  // Conference details — NO BOX, plain bold text
   pdf.setFont('Helvetica', 'bold')
   pdf.setFontSize(11)
-  pdf.setTextColor(...teal)
-  pdf.text(conference.title || '', 105, y + 5, { align: 'center' })
-  pdf.setFontSize(9)
-  pdf.text(`${conference.start_date || ''}${conference.end_date ? ' — ' + conference.end_date : ''}`, 105, y + 12, { align: 'center' })
   pdf.setTextColor(...navy)
-  pdf.text(conference.location || '', 105, y + 19, { align: 'center' })
-  y += 32
+  pdf.text(conference.title || '', 20, y); y += 6
+  pdf.setFont('Helvetica', 'normal')
+  pdf.setFontSize(9.5)
+  pdf.setTextColor(...teal)
+  const confDateLoc = `${conference.start_date || ''}${conference.end_date ? ' — ' + conference.end_date : ''}  |  ${conference.location || ''}`
+  pdf.text(confDateLoc, 20, y); y += 10
+  pdf.setTextColor(...black)
 
   // Body paragraphs
   pdf.setFont('Helvetica', 'normal')
@@ -214,17 +210,21 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.text('Global Fertility Research', 20, y); y += 5
   pdf.text('London, United Kingdom', 20, y)
 
-  // QR code bottom right
+  // QR code — page 1, far RIGHT alongside signature block
   try {
     const QRCode = await import('qrcode')
     const qr = await QRCode.default.toDataURL(
       `https://fertility-global.org/verify/${invitation.invitation_number}`,
-      { width: 100, margin: 1, color: { dark: '#0B2E5C', light: '#FFFFFF' } }
+      { width: 120, margin: 1, color: { dark: '#0B2E5C', light: '#FFFFFF' } }
     )
     if (qr) {
-      pdf.addImage(qr, 'PNG', 160, 248, 28, 28)
-      pdf.setFont('Helvetica', 'normal'); pdf.setFontSize(6.5); pdf.setTextColor(...grey)
-      pdf.text('Scan to verify', 174, 278, { align: 'center' })
+      // Position QR at right side, vertically centered with signature block
+      const qrY = y - 20  // align with top of name block
+      pdf.addImage(qr, 'PNG', 158, qrY - 10, 30, 30)
+      pdf.setFont('Helvetica', 'normal')
+      pdf.setFontSize(6.5)
+      pdf.setTextColor(...grey)
+      pdf.text('Scan to verify', 173, qrY + 22, { align: 'center' })
     }
   } catch (_) {}
 

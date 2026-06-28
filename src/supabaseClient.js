@@ -21,6 +21,8 @@ export const getPublicUrl = (bucket, filePath) => {
 
 export const generateInvitationNumber = () => {
   const year = new Date().getFullYear()
-  const seq = Math.floor(1000 + Math.random() * 9000)
-  return `FGR-${seq}-${year}`
+  // Use timestamp (last 5 digits) + random 2 digits = virtually impossible to duplicate
+  const ts = Date.now() % 100000
+  const rnd = Math.floor(10 + Math.random() * 90)
+  return `FGR-${ts}${rnd}-${year}`
 }

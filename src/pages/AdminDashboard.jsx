@@ -163,17 +163,29 @@ export default function AdminDashboard() {
     if (!doctor) { alert('Doctor not found'); return }
     if (!conference) { alert('Conference not found'); return }
 
-    const invNumber = inv.number || generateInvitationNumber()
+    let invNumber = inv.number || generateInvitationNumber()
     const issueDate = inv.issueDate || new Date().toISOString().split('T')[0]
 
-    const { data, error } = await supabase.from('invitations').insert([{
-      doctor_id: inv.doctorId,
-      conference_id: inv.conferenceId,
-      invitation_number: invNumber,
-      issue_date: issueDate,
-      travel_date: inv.travelDate || null,
-      status: 'issued'
-    }]).select()
+    // Retry up to 3 times if duplicate key
+    let data, error
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.from('invitations').insert([{
+        doctor_id: inv.doctorId,
+        conference_id: inv.conferenceId,
+        invitation_number: invNumber,
+        issue_date: issueDate,
+        travel_date: inv.travelDate || null,
+        status: 'issued'
+      }]).select()
+      data = result.data
+      error = result.error
+      if (!error) break
+      if (error.code === '23505') {
+        // Duplicate - regenerate number and retry
+        invNumber = generateInvitationNumber()
+        await new Promise(r => setTimeout(r, 50))
+      } else break
+    }
 
     if (error) { alert('Error: ' + error.message); return }
 

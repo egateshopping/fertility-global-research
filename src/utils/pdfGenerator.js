@@ -114,7 +114,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.text(`Ref: ${invitation.invitation_number}`, 190, y + 7, { align: 'right' })
   pdf.text(`Date: ${invitation.issue_date}`, 190, y + 13, { align: 'right' })
 
-  y += 14 + toLines.length * 5.5 + 8
+  y += 14 + maxRows * 5.5 + 6
 
   // RE line
   pdf.setFont('Helvetica', 'bold')

@@ -82,6 +82,33 @@ export default function DoctorDashboard({ doctor }) {
     if (data && data.length > 0) setCertRecord(data[0])
   }
 
+  const fetchDocuments = async () => {
+    if (!doctor?.id) return
+    const { data } = await supabase.from('documents').select('*').eq('doctor_id', doctor.id)
+    setDocuments(data || [])
+  }
+
+  const fetchConferences = async () => {
+    const { data } = await supabase.from('conferences').select('*')
+    setConferences(data || [])
+  }
+
+  const fetchInvitations = async () => {
+    if (!doctor?.id) return
+    const { data } = await supabase.from('invitations').select('*').eq('doctor_id', doctor.id)
+    setInvitations(data || [])
+  }
+
+  useEffect(() => {
+    if (!doctor?.id) return
+    fetchDocuments()
+    fetchConferences()
+    fetchInvitations()
+    fetchActivities()
+    fetchInvRequests()
+    fetchCertRecord()
+  }, [doctor?.id])
+
   const downloadCertificate = async () => {
     if (!certRecord) return
     const certNumber = certRecord.cert_number || `FGR-CERT-${doctor.id?.slice(0,4).toUpperCase()}-${new Date().getFullYear()}`

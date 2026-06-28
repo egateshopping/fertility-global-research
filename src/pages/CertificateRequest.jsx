@@ -36,7 +36,7 @@ export default function CertificateRequest({ doctor }) {
     <div className="panel" style={{ marginTop: '1.5rem' }}>
       <h3 style={{ marginBottom: '1rem' }}>🎓 Membership Certificate</h3>
       <p className="muted" style={{ marginBottom: '1rem' }}>
-        Request an official membership certificate from Fertility Global Research.
+        Request an official membership certificate from Global Fertility Research.
       </p>
 
       {requests.length === 0 ? (

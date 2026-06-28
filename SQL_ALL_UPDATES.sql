@@ -83,3 +83,6 @@ ALTER TABLE profile_edit_requests DISABLE ROW LEVEL SECURITY;
 -- 9) Add event_type to conferences
 ALTER TABLE conferences ADD COLUMN IF NOT EXISTS event_type TEXT DEFAULT 'conference';
 -- event_type values: 'conference' | 'workshop' | 'seminar'
+
+-- 10) Rejection reason column for doctors
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS rejection_reason TEXT;

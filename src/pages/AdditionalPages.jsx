@@ -123,7 +123,7 @@ export function BlogPage({ isAdmin }) {
       ...newPost,
       slug,
       published: true,
-      author: 'Fertility Global Research'
+      author: 'Global Fertility Research'
     }])
     
     if (!error) {

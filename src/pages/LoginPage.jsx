@@ -83,7 +83,7 @@ export function LoginPage({ onSuccess, onSwitchPage, onBack }) {
       <div className="auth-card">
         <img src="/logo.png" alt="" className="auth-logo" />
         <h2 className="auth-title">{t('auth_login_title')}</h2>
-        <p className="auth-sub">Fertility Global Research</p>
+        <p className="auth-sub">Global Fertility Research</p>
 
         <form onSubmit={handleLogin} className="auth-form">
           <label className="auth-label">{t('auth_email')}</label>
@@ -110,10 +110,12 @@ export function LoginPage({ onSuccess, onSwitchPage, onBack }) {
           </button>
         </form>
 
-        <p className="auth-switch">
-          Don't have an account?{' '}
-          <button className="auth-link" onClick={onSwitchPage}>Create account</button>
-        </p>
+        {onSwitchPage && (
+          <p className="auth-switch">
+            Don't have an account?{' '}
+            <button className="auth-link" onClick={onSwitchPage}>Create account</button>
+          </p>
+        )}
         {onBack && <button className="auth-back" onClick={onBack}>← Back to site</button>}
       </div>
     </div>
@@ -288,7 +290,7 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
             <label className="auth-check terms-check">
               <input type="checkbox" name="agreeTerms" checked={f.agreeTerms} onChange={ch} />
               <span>
-                I agree to share my information in the association's directory. I acknowledge that <strong>Fertility Global Research is not responsible</strong> for visa decisions made by any authority.{' '}
+                I agree to share my information in the association's directory. I acknowledge that <strong>Global Fertility Research is not responsible</strong> for visa decisions made by any authority.{' '}
                 <a href="#terms" className="auth-link" onClick={e => { e.preventDefault(); window.dispatchEvent(new CustomEvent('goto', {detail:'terms'})) }}>View full Terms & Conditions</a>
               </span>
             </label>

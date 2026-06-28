@@ -55,7 +55,7 @@ export default function VerifyPage({ invNumber }) {
           Invitation Verified
         </h2>
         <p style={{ opacity: .85, fontSize: '.9rem' }}>
-          This is an official invitation from Fertility Global Research
+          This is an official invitation from Global Fertility Research
         </p>
       </div>
 
@@ -121,7 +121,7 @@ export default function VerifyPage({ invNumber }) {
       </div>
 
       <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '.82rem', marginTop: '1.5rem' }}>
-        Issued by Fertility Global Research · London, United Kingdom · fertility-global.org
+        Issued by Global Fertility Research · London, United Kingdom · fertility-global.org
       </p>
     </div>
   )

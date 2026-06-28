@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 const translations = {
   ar: {
     dir: 'rtl',
-    brand: 'Fertility Global Research',
+    brand: 'Global Fertility Research',
     // nav
     nav_home: 'الرئيسية',
     nav_about: 'عن الجمعية',
@@ -49,7 +49,7 @@ const translations = {
     cta_btn: 'إنشاء حساب طبيب',
     // footer
     foot_contact: 'تواصل', foot_links: 'روابط',
-    foot_rights: '© 2026 Fertility Global Research. جميع الحقوق محفوظة.',
+    foot_rights: '© 2026 Global Fertility Research. جميع الحقوق محفوظة.',
     // auth
     auth_login_title: 'تسجيل الدخول',
     auth_register_title: 'إنشاء حساب طبيب',
@@ -165,7 +165,7 @@ const translations = {
   },
   en: {
     dir: 'ltr',
-    brand: 'Fertility Global Research',
+    brand: 'Global Fertility Research',
     nav_home: 'Home',
     nav_about: 'About',
     nav_news: 'Activities',
@@ -175,7 +175,7 @@ const translations = {
     nav_admin: 'Admin',
     nav_login: 'Sign in',
     nav_logout: 'Sign out',
-    hero_sub: 'Fertility Global Research Association',
+    hero_sub: 'Global Fertility Research',
     hero_tag: 'Advancing Fertility Science Worldwide',
     hero_cta_about: 'About the association',
     hero_cta_login: 'Doctor sign in',
@@ -202,7 +202,7 @@ const translations = {
     cta_text: 'Create your free account and start your journey with us.',
     cta_btn: 'Create doctor account',
     foot_contact: 'Contact', foot_links: 'Links',
-    foot_rights: '© 2026 Fertility Global Research. All rights reserved.',
+    foot_rights: '© 2026 Global Fertility Research. All rights reserved.',
     auth_login_title: 'Sign in',
     auth_register_title: 'Create doctor account',
     auth_register_sub: 'Register your details to join',

@@ -16,7 +16,7 @@ import './App.css'
 const ADMIN_EMAILS = ['egate.shopping@gmail.com']
 const SOCIAL_LINKS = {
   facebook: 'https://facebook.com/FertilityGlobalResearch',
-  linkedin: 'https://linkedin.com/company/fertility-global-research',
+  linkedin: 'https://linkedin.com/company/global-fertility-research-research',
   twitter: 'https://twitter.com/FGResearch',
   instagram: 'https://instagram.com/fertilityglobalresearch',
   whatsapp: 'https://wa.me/447512028322'
@@ -104,7 +104,7 @@ export default function App() {
           <h2 className="auth-title">Application Under Review</h2>
           <p className="auth-sub">Your membership application is being reviewed by the association. You will be notified once approved.</p>
           <div className="auth-ok" style={{marginTop:'1rem'}}>⏳ Pending Approval</div>
-          <button className="auth-back" style={{marginTop:'1.5rem'}} onClick={handleLogout}>Sign Out</button>
+          <button className="auth-back" style={{marginTop:'1.5rem'}} onClick={() => { supabase.auth.signOut(); window.location.href='/' }}>← Back to main website</button>
         </div>
       </div>
     )
@@ -157,7 +157,7 @@ export default function App() {
         <div className="nav-inner">
           <button className="brand" onClick={() => goTo('home')}>
             <img src="/logo.png" alt="" className="brand-logo" />
-            <span className="brand-name">Fertility Global Research</span>
+            <span className="brand-name">Global Fertility Research</span>
           </button>
 
           <div className="nav-links">
@@ -207,7 +207,7 @@ export default function App() {
         <div className="container footer-inner">
           <div>
             <img src="/logo.png" alt="" className="footer-logo" />
-            <p className="footer-org">Fertility Global Research</p>
+            <p className="footer-org">Global Fertility Research</p>
             <p className="footer-small">{t('hero_sub')}</p>
           </div>
           <div>

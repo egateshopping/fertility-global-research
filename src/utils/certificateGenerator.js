@@ -95,7 +95,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   pdf.setTextColor(...white)
   pdf.setFont('Helvetica', 'bold')
   pdf.setFontSize(16)
-  pdf.text('FERTILITY GLOBAL RESEARCH', W / 2, 22, { align: 'center' })
+  pdf.text('GLOBAL FERTILITY RESEARCH', W / 2, 22, { align: 'center' })
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(8.5)
   pdf.text('London, United Kingdom  |  fertility-global.org  |  contact@fertility-global.org', W / 2, 30, { align: 'center' })
@@ -152,7 +152,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   pdf.setFont('Times', 'italic')
   pdf.setFontSize(12)
   pdf.setTextColor(...black)
-  pdf.text('Is an active member of the Fertility Global Research', W / 2, 103, { align: 'center' })
+  pdf.text('Is an active member of the Global Fertility Research', W / 2, 103, { align: 'center' })
 
   const year = issueDate ? issueDate.split('-')[0] : new Date().getFullYear()
   const nextYear = parseInt(year) + 1
@@ -187,7 +187,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   pdf.setFont('Times', 'italic')
   pdf.setFontSize(10)
   pdf.setTextColor(...grey)
-  pdf.text('MBChB, MSc — President of Fertility Global Research', W / 2, 169, { align: 'center' })
+  pdf.text('MBChB, MSc — President of Global Fertility Research', W / 2, 169, { align: 'center' })
 
   // ── BOTTOM GOLD BAR ───────────────────────────────────────────────────────
   pdf.setFillColor(...navy)
@@ -197,7 +197,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(7.5)
   pdf.setTextColor(...white)
-  pdf.text('Fertility Global Research  |  London, United Kingdom', W/2, H - 13, { align: 'center' })
+  pdf.text('Global Fertility Research  |  London, United Kingdom  |  Company Reg: 17263260', W/2, H - 13, { align: 'center' })
 
   return pdf
 }

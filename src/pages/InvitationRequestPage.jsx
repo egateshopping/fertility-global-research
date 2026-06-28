@@ -39,7 +39,7 @@ export default function InvitationRequestPage() {
     <div>
       <h1>Request an Invitation Letter</h1>
       <p className="muted" style={{ marginBottom: '1.5rem' }}>
-        Fill in your details below to request an official invitation letter from Fertility Global Research.
+        Fill in your details below to request an official invitation letter from Global Fertility Research.
       </p>
       <form onSubmit={submit} className="report-form" style={{ maxWidth: 580 }}>
         <input className="auth-input ltr-input" placeholder="Full Name — as on passport *" dir="ltr"

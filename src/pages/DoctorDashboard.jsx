@@ -69,56 +69,6 @@ export default function DoctorDashboard({ doctor }) {
   // Invitation requests
   const [invRequests, setInvRequests] = useState([])
   const [certRecord, setCertRecord] = useState(null)
-  const [showEditForm, setShowEditForm] = useState(false)
-  const [editFields, setEditFields] = useState({})
-  const [editSent, setEditSent] = useState(false)
-  const [editLoading, setEditLoading] = useState(false)
-  const [selectedConfId, setSelectedConfId] = useState('')
-  const [invReqMsg, setInvReqMsg] = useState('')
-  const [submittingReq, setSubmittingReq] = useState(false)
-  const [reqSent, setReqSent] = useState(false)
-
-  useEffect(() => {
-    if (!doctor?.id) return
-    fetchDocuments()
-    fetchConferences()
-    fetchInvitations()
-    fetchActivities()
-    fetchInvRequests()
-    fetchCertRecord()
-  }, [doctor?.id])
-
-  const fetchDocuments = async () => {
-    const { data } = await supabase.from('documents').select('*').eq('doctor_id', doctor.id)
-    setDocuments(data || [])
-  }
-
-  const fetchConferences = async () => {
-    const { data } = await supabase.from('conferences').select('*')
-    setConferences(data || [])
-  }
-
-  const fetchInvitations = async () => {
-    const { data } = await supabase.from('invitations').select('*').eq('doctor_id', doctor.id)
-    setInvitations(data || [])
-  }
-
-  const submitEditRequest = async (e) => {
-    e.preventDefault()
-    setEditLoading(true)
-    const changes = {}
-    Object.entries(editFields).forEach(([k, v]) => { if (v && v !== doctor[k]) changes[k] = v })
-    if (Object.keys(changes).length === 0) { alert('No changes made.'); setEditLoading(false); return }
-    await supabase.from('profile_edit_requests').insert([{
-      doctor_id: doctor.id,
-      requested_changes: changes,
-      status: 'pending'
-    }])
-    setEditSent(true)
-    setShowEditForm(false)
-    setEditLoading(false)
-    setTimeout(() => setEditSent(false), 4000)
-  }
 
   const fetchCertRecord = async () => {
     if (!doctor?.id) return
@@ -147,6 +97,13 @@ export default function DoctorDashboard({ doctor }) {
     e.preventDefault()
     if (!selectedConfId) { alert('Please select a conference'); return }
     setSubmittingReq(true)
+    // Check for duplicate
+    const { data: existing } = await supabase.from('invitation_requests')
+      .select('id').eq('email', doctor.email).eq('conference_id', selectedConfId).eq('status', 'new')
+    if (existing && existing.length > 0) {
+      alert('You already have a pending request for this conference.')
+      setSubmittingReq(false); return
+    }
     const { error } = await supabase.from('invitation_requests').insert([{
       full_name: doctor.full_name,
       email: doctor.email,
@@ -289,42 +246,6 @@ export default function DoctorDashboard({ doctor }) {
             </div>
           ) : null)}
         </div>
-      </div>
-
-      {/* ── Edit Profile Request ── */}
-      <div className="panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2 style={{ fontFamily: 'Cairo', color: 'var(--navy)', fontSize: '1.4rem' }}>Edit Profile</h2>
-          <button className="btn-soft" onClick={() => { setShowEditForm(!showEditForm); setEditFields({}) }}>
-            {showEditForm ? 'Cancel' : '✏️ Request Edit'}
-          </button>
-        </div>
-
-        {editSent && <div className="auth-ok" style={{ marginBottom: '1rem' }}>✓ Edit request submitted. Admin will review and apply your changes.</div>}
-
-        {showEditForm && (
-          <form onSubmit={submitEditRequest} style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
-            <p className="muted" style={{ fontSize: '.88rem', marginBottom: '.3rem' }}>Fill only the fields you want to change. Admin must approve before changes take effect.</p>
-            {[
-              ['full_name', 'Full Name'],
-              ['specialty', 'Specialty'],
-              ['hospital', 'Hospital'],
-              ['clinic_address', 'Clinic Address'],
-              ['phone', 'Phone'],
-              ['address', 'Home Address'],
-              ['city', 'City'],
-              ['governorate', 'Governorate'],
-            ].map(([field, label]) => (
-              <input key={field} className="auth-input ltr-input" dir="ltr"
-                placeholder={`${label} (current: ${doctor[field] || '—'})`}
-                value={editFields[field] || ''}
-                onChange={e => setEditFields({ ...editFields, [field]: e.target.value })} />
-            ))}
-            <button className="btn-primary" type="submit" disabled={editLoading} style={{ width: 'fit-content' }}>
-              {editLoading ? 'Submitting...' : '📨 Submit Edit Request'}
-            </button>
-          </form>
-        )}
       </div>
 
       {/* ── Documents Upload ── */}

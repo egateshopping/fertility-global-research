@@ -32,13 +32,13 @@ const addHeader = async (pdf, navy, teal, white) => {
   pdf.setTextColor(...white)
   pdf.setFont('Helvetica', 'bold')
   pdf.setFontSize(13)
-  pdf.text('FERTILITY GLOBAL RESEARCH', 42, 13)
+  pdf.text('GLOBAL FERTILITY RESEARCH', 42, 13)
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(8)
   pdf.text('Advancing Fertility Science Worldwide', 42, 20)
   pdf.text('London, United Kingdom  |  fertility-global.org', 42, 26)
   pdf.setFontSize(7.5)
-  pdf.text('From: Fertility Global Research', 200, 10, { align: 'right' })
+  pdf.text('From: Global Fertility Research', 200, 10, { align: 'right' })
   pdf.text('London, United Kingdom', 200, 16, { align: 'right' })
   pdf.text('contact@fertility-global.org', 200, 22, { align: 'right' })
 }
@@ -51,7 +51,7 @@ const addFooter = (pdf, navy, teal, white) => {
   pdf.setTextColor(...white)
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(7.5)
-  pdf.text('Fertility Global Research  |  London, United Kingdom', 20, 291)
+  pdf.text('Global Fertility Research  |  London, United Kingdom', 20, 291)
   pdf.text('contact@fertility-global.org  |  fertility-global.org', 190, 291, { align: 'right' })
 }
 
@@ -130,7 +130,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.setFontSize(10)
   pdf.text(`Dear Dr. ${doctor.full_name},`, 20, y)
   y += 8
-  pdf.text('I am writing to invite you on behalf of Fertility Global Research to attend', 20, y); y += 5.5
+  pdf.text('I am writing to invite you on behalf of Global Fertility Research to attend', 20, y); y += 5.5
   pdf.text('and participate in the upcoming event:', 20, y); y += 10
 
   // Conference highlight box
@@ -156,7 +156,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
 
   const paras = [
     `The programme will include a variety of scientific presentations covering the recent advances in fertility medicine and reproductive science. There will be workshops on ${conference.start_date || 'the first day'} to cover medical education and training.`,
-    `Fertility Global Research was established to maintain and strengthen active interaction within the medical community in the UK and internationally. The participation of consultants and experts from across the world helps to promote advances in healthcare services.`,
+    `Global Fertility Research was established to maintain and strengthen active interaction within the medical community in the UK and internationally. The participation of consultants and experts from across the world helps to promote advances in healthcare services.`,
     `This medical conference will bring together leading medical professionals from around the world to discuss the latest advancements, research findings, and best practices in Medicine and fertility science.`,
     `We believe your expertise as ${doctor.specialty ? 'a specialist in ' + doctor.specialty : 'a qualified medical professional'} at ${doctor.hospital || 'your institution'} would be a valuable addition to the conference. Your participation and input in the scientific programme will help to discuss the challenges facing health professionals and healthcare services.`,
 
@@ -191,7 +191,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.setFontSize(9)
   pdf.setTextColor(...grey)
   pdf.text('President', 20, y); y += 5
-  pdf.text('Fertility Global Research', 20, y); y += 5
+  pdf.text('Global Fertility Research', 20, y); y += 5
   pdf.text('London, United Kingdom', 20, y)
 
   // QR code bottom right
@@ -312,7 +312,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   const terms = [
     'This invitation is non-transferable and issued for the named individual only.',
     'The invitation holder agrees to abide by all conference rules and regulations.',
-    'Fertility Global Research is not responsible for visa decisions made by any authority.',
+    'Global Fertility Research is not responsible for visa decisions made by any authority.',
     'The association does not bear responsibility for travel, accommodation, or related costs.',
     'Dress code: Business Casual for conference sessions, Semi-formal for Gala Dinner.',
   ]
@@ -339,7 +339,7 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.setFont('Helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(...navy)
   pdf.text('Mohammed Khayyat', 20, y); y += 5.5
   pdf.setFont('Helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(...grey)
-  pdf.text('President — Fertility Global Research', 20, y); y += 5
+  pdf.text('President — Global Fertility Research', 20, y); y += 5
   pdf.text('contact@fertility-global.org  |  fertility-global.org', 20, y)
 
   addFooter(pdf, navy, teal, white)

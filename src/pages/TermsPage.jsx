@@ -6,7 +6,7 @@ export default function TermsPage() {
       <div className="terms-header">
         <img src="/logo.png" alt="" className="terms-logo" />
         <h1>Terms & Conditions</h1>
-        <p>Fertility Global Research — London, United Kingdom</p>
+        <p>Global Fertility Research — London, United Kingdom</p>
         <p className="terms-date">Last updated: June 2026</p>
       </div>
 
@@ -14,7 +14,7 @@ export default function TermsPage() {
 
         <section className="terms-section">
           <h2>1. About Us</h2>
-          <p>Fertility Global Research is a British scientific organization based in London, United Kingdom. We specialize in fertility medicine research and advancing medical knowledge through international conferences, training, and collaboration among healthcare professionals worldwide.</p>
+          <p>Global Fertility Research is a British scientific organization based in London, United Kingdom. We specialize in fertility medicine research and advancing medical knowledge through international conferences, training, and collaboration among healthcare professionals worldwide.</p>
         </section>
 
         <section className="terms-section">
@@ -36,7 +36,7 @@ export default function TermsPage() {
         <section className="terms-section">
           <h2>4. Visa & Travel — Disclaimer</h2>
           <p className="terms-important">
-            ⚠️ <strong>Fertility Global Research is not responsible for any visa decisions made by embassies, consulates, or immigration authorities.</strong> Invitation letters issued by the association are provided solely to support conference attendance applications. Issuance of an invitation letter does not guarantee visa approval or entry into any country.
+            ⚠️ <strong>Global Fertility Research is not responsible for any visa decisions made by embassies, consulates, or immigration authorities.</strong> Invitation letters issued by the association are provided solely to support conference attendance applications. Issuance of an invitation letter does not guarantee visa approval or entry into any country.
           </p>
         </section>
 

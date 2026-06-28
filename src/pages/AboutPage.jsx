@@ -6,7 +6,7 @@ export default function AboutPage() {
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-teal-600 to-blue-600 text-white rounded-lg shadow-lg p-12">
         <h1 className="text-4xl font-bold mb-4">عن جمعية الخصوبة العالمية</h1>
-        <h2 className="text-2xl font-semibold mb-6">About Fertility Global Research</h2>
+        <h2 className="text-2xl font-semibold mb-6">About Global Fertility Research</h2>
         <p className="text-lg leading-relaxed max-w-3xl">
           جمعية متخصصة في البحث العلمي والتطوير الطبي في مجال الخصوبة وعلاج العقم. نعمل على تجميع أفضل الكفاءات الطبية من حول العالم لتبادل الخبرات والمعرفة.
         </p>

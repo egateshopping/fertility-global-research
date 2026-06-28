@@ -24,8 +24,8 @@ export default function HomePage({ onNavigate, onLogin }) {
     <div className="home">
       <section className="hero-section">
         <div className="hero-inner">
-          <img src="/logo.png" alt="Fertility Global Research" className="hero-logo" />
-          <h1 className="hero-title">Fertility Global Research</h1>
+          <img src="/logo.png" alt="Global Fertility Research" className="hero-logo" />
+          <h1 className="hero-title">Global Fertility Research</h1>
           <p className="hero-sub-ar">{t('hero_sub')}</p>
           <p className="hero-tag">{t('hero_tag')}</p>
           <div className="hero-actions">

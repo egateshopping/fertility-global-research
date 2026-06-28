@@ -137,7 +137,7 @@ export default function AdminDashboard() {
   }
   const exportPDF = () => {
     const pdf = new jsPDF()
-    pdf.setFontSize(16); pdf.text('Fertility Global Research - Doctors', 14, 18)
+    pdf.setFontSize(16); pdf.text('Global Fertility Research - Doctors', 14, 18)
     pdf.setFontSize(9)
     let y = 30
     pdf.text('Name', 14, y); pdf.text('Specialty', 70, y); pdf.text('Country', 120, y); pdf.text('Passport', 160, y)
@@ -235,7 +235,12 @@ export default function AdminDashboard() {
     fetchDoctors()
     fetchCertRequests()
   }
-  const rejectDoctor = async (id) => { if (confirm('Reject this membership?')) { await supabase.from('doctors').update({ status: 'rejected' }).eq('id', id); fetchPending() } }
+  const rejectDoctor = async (id) => {
+    const reason = window.prompt('Reason for rejection (optional):')
+    if (reason === null) return // cancelled
+    await supabase.from('doctors').update({ status: 'rejected', rejection_reason: reason || '' }).eq('id', id)
+    fetchPending()
+  }
   const approveCert = async (id) => { await supabase.from('certificate_requests').update({ status: 'approved', issued_date: new Date().toISOString().split('T')[0] }).eq('id', id); fetchCertRequests() }
   const deleteActivity = async (id) => { if (confirm('Delete this activity?')) { await supabase.from('member_activities').delete().eq('id', id); fetchMemberActivities() } }
   const applyEditRequest = async (req) => {
@@ -634,6 +639,17 @@ export default function AdminDashboard() {
                       {r.status === 'pending' && (
                         <button className="mini admin-btn" onClick={() => approveCert(r.id)}>✅ Approve</button>
                       )}
+                      {r.status === 'approved' && r.issued_date && (() => {
+                        const doc = doctors.find(d => d.id === r.doctor_id)
+                        if (!doc) return null
+                        return (
+                          <button className="mini" onClick={async () => {
+                            const { generateCertificatePDF } = await import('../utils/certificateGenerator.js')
+                            const pdf = await generateCertificatePDF(doc, r.cert_number || 'FGR-CERT', r.issued_date)
+                            pdf.save(`FGR-Certificate-${doc.full_name}.pdf`)
+                          }}>⬇ PDF</button>
+                        )
+                      })()}
                     </td>
                   </tr>
                 ))}

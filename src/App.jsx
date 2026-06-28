@@ -95,7 +95,15 @@ export default function App() {
     window.scrollTo(0, 0)
   }
 
-  // Show pending screen if member not yet approved
+  // Auto-refresh for pending doctors every 30 seconds
+  useEffect(() => {
+    if (!user || !doctor || doctor.status !== 'pending' || isAdmin) return
+    const interval = setInterval(async () => {
+      const { data } = await supabase.from('doctors').select('status').eq('user_id', user.id).single()
+      if (data?.status === 'approved') window.location.reload()
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [user, doctor, isAdmin])
   if (user && doctor && doctor.status === 'pending' && !isAdmin) {
     return (
       <div className="auth-screen">
@@ -104,7 +112,27 @@ export default function App() {
           <h2 className="auth-title">Application Under Review</h2>
           <p className="auth-sub">Your membership application is being reviewed by the association. You will be notified once approved.</p>
           <div className="auth-ok" style={{marginTop:'1rem'}}>⏳ Pending Approval</div>
-          <button className="auth-back" style={{marginTop:'1.5rem'}} onClick={() => { supabase.auth.signOut(); window.location.href='/' }}>← Back to main website</button>
+          <p className="muted" style={{fontSize:'.82rem', marginTop:'.8rem'}}>
+            This page refreshes automatically every 30 seconds.
+          </p>
+          <div style={{display:'flex', flexDirection:'column', gap:'.8rem', marginTop:'1.5rem', width:'100%'}}>
+            <button className="btn-primary" onClick={async () => {
+              // Refresh doctor status from DB
+              const { data } = await supabase.from('doctors').select('*').eq('user_id', user.id).single()
+              if (data) {
+                if (data.status === 'approved') {
+                  window.location.reload()
+                } else {
+                  alert('Your application is still under review.')
+                }
+              }
+            }}>🔄 Check Status</button>
+            <button className="auth-back" onClick={() => {
+              supabase.auth.signOut().then(() => {
+                window.location.href = '/'
+              })
+            }}>← Back to main website</button>
+          </div>
         </div>
       </div>
     )

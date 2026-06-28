@@ -472,6 +472,13 @@ export default function AdminDashboard() {
                       >
                         {d.is_admin ? '🔴 إلغاء أدمن' : '🟢 تعيين أدمن'}
                       </button>
+                      <button className="mini" style={{background:'#e8f4ff',color:'#0B2E5C'}} onClick={async () => {
+                        const cert = certRequests.find(r => r.doctor_id === d.id && r.status === 'approved')
+                        if (!cert) { alert('No approved certificate for this doctor yet.'); return }
+                        const { generateCertificatePDF } = await import('../utils/certificateGenerator.js')
+                        const pdf = await generateCertificatePDF(d, cert.cert_number || 'FGR-CERT', cert.issued_date)
+                        pdf.save(`Certificate-${(d.full_name||'').trim()}.pdf`)
+                      }}>🎓 Cert</button>
                       <button className="mini danger" onClick={() => deleteDoctor(d.id)}>حذف</button>
                     </td>
                   </tr>

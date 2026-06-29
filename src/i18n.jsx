@@ -16,7 +16,7 @@ const translations = {
     nav_login: 'دخول',
     nav_logout: 'خروج',
     // hero
-    hero_sub: 'Advancing Fertility Science Worldwide',
+    hero_sub: 'Global Fertility Research',
     hero_tag: 'تقدم علوم الخصوبة عالمياً',
     hero_cta_about: 'تعرّف على الجمعية',
     hero_cta_login: 'تسجيل دخول',
@@ -167,6 +167,7 @@ const translations = {
   en: {
     dir: 'ltr',
     brand: 'Global Fertility Research',
+    hero_brand: 'Global Fertility Research',
     nav_home: 'Home',
     nav_about: 'About',
     nav_news: 'Activities',
@@ -176,7 +177,7 @@ const translations = {
     nav_admin: 'Admin',
     nav_login: 'Sign in',
     nav_logout: 'Sign out',
-    hero_sub: 'Advancing Fertility Science Worldwide',
+    hero_sub: 'Global Fertility Research Association',
     hero_tag: 'Advancing Fertility Science Worldwide',
     hero_cta_about: 'About the association',
     hero_cta_login: 'Sign in',

@@ -4,6 +4,7 @@ const translations = {
   ar: {
     dir: 'rtl',
     brand: 'Global Fertility Research',
+    hero_brand: 'جمعية الخصوبة العالمية للبحث العلمي',
     // nav
     nav_home: 'الرئيسية',
     nav_about: 'عن الجمعية',
@@ -15,10 +16,10 @@ const translations = {
     nav_login: 'دخول',
     nav_logout: 'خروج',
     // hero
-    hero_sub: 'جمعية الخصوبة العالمية للبحث العلمي',
+    hero_sub: 'Advancing Fertility Science Worldwide',
     hero_tag: 'تقدم علوم الخصوبة عالمياً',
     hero_cta_about: 'تعرّف على الجمعية',
-    hero_cta_login: 'تسجيل دخول الأطباء',
+    hero_cta_login: 'تسجيل دخول',
     // intro
     intro_eyebrow: 'من نحن',
     intro_title: 'منصة عالمية لتطوير أبحاث الخصوبة',
@@ -44,15 +45,15 @@ const translations = {
     // stats
     stat_doctors: 'طبيب متخصص', stat_confs: 'مؤتمر', stat_countries: 'دولة', stat_research: 'بحث منشور',
     // cta
-    cta_title: 'انضم إلى مجتمع الأطباء العالمي',
+    cta_title: 'انضم إلى مجتمع الأعضاء العالمي',
     cta_text: 'سجّل حسابك المجاني وابدأ رحلتك مع الجمعية.',
-    cta_btn: 'إنشاء حساب طبيب',
+    cta_btn: 'إنشاء حساب',
     // footer
     foot_contact: 'تواصل', foot_links: 'روابط',
     foot_rights: '© 2026 Global Fertility Research. جميع الحقوق محفوظة.',
     // auth
     auth_login_title: 'تسجيل الدخول',
-    auth_register_title: 'إنشاء حساب طبيب',
+    auth_register_title: 'إنشاء حساب',
     auth_register_sub: 'سجّل بياناتك للانضمام',
     auth_email: 'البريد الإلكتروني',
     auth_password: 'كلمة المرور',
@@ -175,10 +176,10 @@ const translations = {
     nav_admin: 'Admin',
     nav_login: 'Sign in',
     nav_logout: 'Sign out',
-    hero_sub: 'Global Fertility Research',
+    hero_sub: 'Advancing Fertility Science Worldwide',
     hero_tag: 'Advancing Fertility Science Worldwide',
     hero_cta_about: 'About the association',
-    hero_cta_login: 'Doctor sign in',
+    hero_cta_login: 'Sign in',
     intro_eyebrow: 'About',
     intro_title: 'A global platform for fertility research',
     intro_text: 'A UK-based organization dedicated to fertility research and medical advancement, connecting leading doctors and researchers worldwide through conferences, training, and shared knowledge.',

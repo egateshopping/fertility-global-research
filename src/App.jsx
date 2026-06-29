@@ -106,6 +106,33 @@ export default function App() {
     }, 30000)
     return () => clearInterval(interval)
   }, [user, doctor, isAdmin])
+
+  // ── PUBLIC VERIFY PAGES (must come first — work without login) ──────────
+  // Public cert verify page
+  if (certVerifyMatch) {
+    const certNum = certVerifyMatch[1]
+    return (
+      <div className="page-wrap" style={{ maxWidth: 700, margin: '0 auto', padding: '1rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <img src="/logo.png" alt="" style={{ width: 80 }} />
+        </div>
+        <CertVerifyPage certNumber={certNum} />
+      </div>
+    )
+  }
+
+  // Public invitation verify page - no auth needed
+  if (verifyNum) {
+    return (
+      <div className="page-wrap" style={{ maxWidth: 700, margin: '0 auto', padding: '1rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <img src="/logo.png" alt="" style={{ width: 80 }} />
+        </div>
+        <VerifyPage invNumber={verifyNum} />
+      </div>
+    )
+  }
+
   if (user && doctor && doctor.status === 'pending' && !isAdmin) {
     return (
       <div className="auth-screen">
@@ -140,27 +167,26 @@ export default function App() {
     )
   }
 
-  // Public cert verify page
-  if (certVerifyMatch) {
-    const certNum = certVerifyMatch[1]
+  // Rejected member screen
+  if (user && doctor && doctor.status === 'rejected' && !isAdmin) {
     return (
-      <div className="page-wrap" style={{ maxWidth: 700, margin: '0 auto', padding: '1rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <img src="/logo.png" alt="" style={{ width: 80 }} />
+      <div className="auth-screen">
+        <div className="auth-card center">
+          <img src="/logo.png" alt="" className="auth-logo" />
+          <h2 className="auth-title">Application Status</h2>
+          <p className="auth-sub">We regret to inform you that your membership application was not approved at this time.</p>
+          {doctor.rejection_reason && (
+            <div style={{background:'#fff3cd',border:'1px solid #ffc107',color:'#856404',borderRadius:10,padding:'.8rem',marginTop:'1rem',fontSize:'.88rem'}}>
+              <strong>Reason:</strong> {doctor.rejection_reason}
+            </div>
+          )}
+          <p className="muted" style={{fontSize:'.85rem',marginTop:'1rem'}}>
+            For more information, please contact: contact@fertility-global.org
+          </p>
+          <button className="auth-back" style={{marginTop:'1.5rem'}} onClick={() => {
+            supabase.auth.signOut().then(() => { window.location.href = '/' })
+          }}>← Back to main website</button>
         </div>
-        <CertVerifyPage certNumber={certNum} />
-      </div>
-    )
-  }
-
-  // Public invitation verify page - no auth needed
-  if (verifyNum) {
-    return (
-      <div className="page-wrap" style={{ maxWidth: 700, margin: '0 auto', padding: '1rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <img src="/logo.png" alt="" style={{ width: 80 }} />
-        </div>
-        <VerifyPage invNumber={verifyNum} />
       </div>
     )
   }

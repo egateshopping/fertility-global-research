@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, generateInvitationNumber } from '../supabaseClient'
 import { generateInvitationPDF } from '../utils/pdfGenerator'
+import { notifyApproved, notifyRejected, notifyInvitation } from '../utils/notifications.js'
 import { generateCertificatePDF } from '../utils/certificateGenerator'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
@@ -203,6 +204,8 @@ export default function AdminDashboard() {
     setInv({ doctorId: '', conferenceId: '', travelDate: '', issueDate: new Date().toISOString().split('T')[0], number: '' })
     setInvDoctorEdit(null)
     fetchInvitations()
+    // Send invitation email (non-blocking)
+    if (doctor?.email) notifyInvitation(doctor.email, (doctor.full_name || '').trim(), conference.title, invNumber)
     alert('✅ Invitation issued and PDF downloaded!')
   }
 
@@ -259,6 +262,7 @@ export default function AdminDashboard() {
   }
 
   const approveDoctor = async (id) => {
+    const doctor = pendingDoctors.find(d => d.id === id) || doctors.find(d => d.id === id)
     await supabase.from('doctors').update({ status: 'approved' }).eq('id', id)
     // Auto-create certificate record on approval
     const issueDate = new Date().toISOString().split('T')[0]
@@ -269,6 +273,8 @@ export default function AdminDashboard() {
       issued_date: issueDate,
       cert_number: certNumber
     }])
+    // Send approval email (non-blocking)
+    if (doctor?.email) notifyApproved(doctor.email, (doctor.full_name || '').trim())
     fetchPending()
     fetchDoctors()
     fetchCertRequests()
@@ -276,7 +282,10 @@ export default function AdminDashboard() {
   const rejectDoctor = async (id) => {
     const reason = window.prompt('Reason for rejection (optional):')
     if (reason === null) return // cancelled
+    const doctor = pendingDoctors.find(d => d.id === id) || doctors.find(d => d.id === id)
     await supabase.from('doctors').update({ status: 'rejected', rejection_reason: reason || '' }).eq('id', id)
+    // Send rejection email (non-blocking)
+    if (doctor?.email) notifyRejected(doctor.email, (doctor.full_name || '').trim(), reason || '')
     fetchPending()
   }
   const approveCert = async (id) => { await supabase.from('certificate_requests').update({ status: 'approved', issued_date: new Date().toISOString().split('T')[0] }).eq('id', id); fetchCertRequests() }

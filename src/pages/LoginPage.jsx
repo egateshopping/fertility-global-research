@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { useLang } from '../i18n.jsx'
 import { COUNTRIES } from '../countries.js'
+import { notifyRegistration } from '../utils/notifications.js'
 
 const BUCKET = 'doctor-documents'
 
@@ -244,6 +245,8 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
       }
 
       setDone(true)
+      // Send confirmation email (non-blocking)
+      notifyRegistration(f.email, f.fullName.trim())
       setTimeout(onSuccess, 2000)
     } catch (err) {
       setError('Unexpected error: ' + err.message)

@@ -107,7 +107,15 @@ export default function AdminDashboard() {
     if (!error) { setNewConf({ title: '', location: '', start_date: '', end_date: '', registration_deadline: '', description: '' }); setShowConfForm(false); fetchConferences() }
     else alert(error.message)
   }
-  const deleteConference = async (id) => { if (confirm('حذف هذا المؤتمر؟')) { await supabase.from('conferences').delete().eq('id', id); fetchConferences() } }
+  const deleteConference = async (id) => {
+    if (!confirm('حذف هذا المؤتمر؟')) return
+    const { error } = await supabase.from('conferences').delete().eq('id', id)
+    if (error) {
+      alert('لا يمكن حذف المؤتمر لوجود دعوات مرتبطة به. احذف الدعوات أولاً.\n\n' + error.message)
+    } else {
+      fetchConferences()
+    }
+  }
 
   // ---------- doctor edit/delete ----------
   const saveDoctor = async (e) => {
@@ -574,7 +582,10 @@ export default function AdminDashboard() {
                 <h3>{c.title}</h3>
                 <p className="event-loc">📍 {c.location}</p>
                 <p className="muted">{c.start_date} → {c.end_date}</p>
-                <button className="mini danger" onClick={() => deleteConference(c.id)}>حذف</button>
+                <div className="row-actions" style={{ marginTop: '.5rem' }}>
+                  <button className="mini" style={{background:'#e8f4ff',color:'#0B2E5C'}} onClick={() => setEditConference({...c})}>✏️ تعديل</button>
+                  <button className="mini danger" onClick={() => deleteConference(c.id)}>حذف</button>
+                </div>
               </div>
             ))}
           </div>

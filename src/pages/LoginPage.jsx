@@ -251,7 +251,10 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
             throw new Error(`Failed to upload ${type}: ${upErr.message}`)
           }
           // Only save the DB record AFTER successful upload
-          await supabase.from('documents').insert([{ doctor_id: doctorId, document_type: type, file_url: path }])
+          const { error: dbErr } = await supabase.from('documents').insert([{ doctor_id: doctorId, document_type: type, file_url: path }])
+          if (dbErr) {
+            throw new Error(`Failed to save ${type} record: ${dbErr.message}`)
+          }
         }
         // If upload fails, the whole registration reports the error
         await uploadDoc(passportFile, 'passport')

@@ -92,12 +92,31 @@ export default function AdminDashboard() {
   // ---------- documents ----------
   const openDoctorFiles = async (doctor) => {
     setViewDoctor(doctor)
-    const { data } = await supabase.from('documents').select('*').eq('doctor_id', doctor.id)
-    const withUrls = (data || []).map(doc => ({
-      ...doc,
-      url: supabase.storage.from('doctor-documents').getPublicUrl(doc.file_url).data.publicUrl
-    }))
+    setDocFiles([])
+    const { data, error } = await supabase.from('documents').select('*').eq('doctor_id', doctor.id)
+    if (error) { alert('Error loading documents: ' + error.message); return }
+    if (!data || data.length === 0) {
+      setDocFiles([])
+      return
+    }
+    const withUrls = data.map(doc => {
+      // Use signed URL as fallback if public URL fails
+      const publicUrl = supabase.storage.from('doctor-documents').getPublicUrl(doc.file_url).data.publicUrl
+      return { ...doc, url: publicUrl }
+    })
     setDocFiles(withUrls)
+  }
+
+  const openSignedFile = async (filePath) => {
+    // Generate a signed URL (works even for private buckets)
+    const { data, error } = await supabase.storage
+      .from('doctor-documents')
+      .createSignedUrl(filePath, 3600)
+    if (error) {
+      alert('File not found in storage. The member may have registered before document upload was required.\n\nPath: ' + filePath)
+      return
+    }
+    window.open(data.signedUrl, '_blank')
   }
 
   // ---------- conference ----------
@@ -877,9 +896,9 @@ export default function AdminDashboard() {
             {docFiles.length === 0 ? <p className="muted">لم يرفع هذا الطبيب أي ملفات بعد.</p> : (
               <div className="files-grid">
                 {docFiles.map(f => (
-                  <a key={f.id} href={f.url} target="_blank" rel="noopener noreferrer" className="file-chip">
+                  <button key={f.id} onClick={() => openSignedFile(f.file_url)} className="file-chip" style={{ cursor: 'pointer', border: 'none' }}>
                     📄 {f.document_type}
-                  </a>
+                  </button>
                 ))}
               </div>
             )}

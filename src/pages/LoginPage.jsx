@@ -199,7 +199,15 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
     try {
       // 1) Create auth account
       const { data, error: authErr } = await supabase.auth.signUp({ email: f.email, password: f.password })
-      if (authErr) { setError(authErr.message); setLoading(false); return }
+      if (authErr) {
+        // If email already registered, give a clear message
+        if (authErr.message.toLowerCase().includes('already') || authErr.message.toLowerCase().includes('registered')) {
+          setError('This email is already registered. Please sign in instead, or use a different email. If you were deleted by an admin, contact contact@fertility-global.org to fully remove your old account.')
+        } else {
+          setError(authErr.message)
+        }
+        setLoading(false); return
+      }
       const userId = data?.user?.id
       if (!userId) { setError('Registration failed. Please try again.'); setLoading(false); return }
 

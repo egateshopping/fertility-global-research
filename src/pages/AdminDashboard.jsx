@@ -161,10 +161,24 @@ export default function AdminDashboard() {
     if (!error) { setEditDoctor(null); fetchDoctors() } else alert(error.message)
   }
   const deleteDoctor = async (id) => {
-    if (confirm('حذف هذا الطبيب نهائياً؟ سيتم حذف دعواته أيضاً.')) {
-      await supabase.from('doctors').delete().eq('id', id)
-      fetchDoctors(); fetchInvitations()
-    }
+    if (!confirm('حذف هذا الطبيب نهائياً؟ سيتم حذف دعواته ووثائقه أيضاً.')) return
+    // 1) Delete storage files
+    try {
+      const { data: files } = await supabase.storage.from('doctor-documents').list(id)
+      if (files && files.length > 0) {
+        const paths = files.map(f => `${id}/${f.name}`)
+        await supabase.storage.from('doctor-documents').remove(paths)
+      }
+    } catch (e) { /* ignore storage errors */ }
+    // 2) Delete related records
+    await supabase.from('documents').delete().eq('doctor_id', id)
+    await supabase.from('invitations').delete().eq('doctor_id', id)
+    await supabase.from('certificate_requests').delete().eq('doctor_id', id)
+    await supabase.from('member_activities').delete().eq('doctor_id', id)
+    // 3) Delete the doctor record
+    await supabase.from('doctors').delete().eq('id', id)
+    fetchDoctors(); fetchInvitations(); fetchCertRequests()
+    alert('تم حذف الطبيب ووثائقه.\n\nملاحظة: حساب الدخول (الإيميل) يبقى في النظام. لإعادة استخدام نفس الإيميل، احذفه يدوياً من Supabase → Authentication → Users.')
   }
 
   // ---------- export ----------

@@ -454,6 +454,11 @@ export default function DoctorDashboard({ doctor }) {
               <option key={c.id} value={c.id}>{c.title} ({c.start_date})</option>
             ))}
           </select>
+
+          <div style={{ background: '#EBF4F8', border: '1px solid var(--teal)', borderRadius: 8, padding: '.8rem 1rem', fontSize: '.85rem', color: 'var(--navy)' }}>
+            💷 <strong>Conference registration fee: £550</strong>, covered by the sponsoring body as financial expenses.
+          </div>
+
           <textarea className="auth-input" rows="3"
             placeholder="Additional notes (optional)"
             value={invReqMsg} onChange={e => setInvReqMsg(e.target.value)} />

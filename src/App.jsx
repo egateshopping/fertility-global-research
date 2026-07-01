@@ -294,6 +294,7 @@ export default function App() {
             <h4>{t('foot_contact')}</h4>
             <p>London, United Kingdom</p>
             <p>contact@fertility-global.org</p>
+            <p dir="ltr">+44 7418 602220</p>
           </div>
           <div>
             <h4>{t('foot_links')}</h4>

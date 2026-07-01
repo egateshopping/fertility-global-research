@@ -51,7 +51,7 @@ const addFooter = (pdf, navy, teal, white) => {
   pdf.setTextColor(...white)
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(7.5)
-  pdf.text('Global Fertility Research  |  London, United Kingdom', 20, 291)
+  pdf.text('Global Fertility Research  |  London, United Kingdom  |  +44 7418 602220', 20, 291)
   pdf.text('contact@fertility-global.org  |  fertility-global.org', 190, 291, { align: 'right' })
 }
 

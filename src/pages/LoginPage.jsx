@@ -231,15 +231,29 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
       const { data: docData } = await supabase.from('doctors').select('id').eq('user_id', userId).single()
       const doctorId = docData?.id
 
-      // 4) Upload documents
+      // 4) Upload documents — WITH verification
       if (doctorId) {
         const uploadDoc = async (file, type) => {
           const compressed = await compressImage(file)
-          const ext = compressed.name ? compressed.name.split('.').pop() : 'jpg'
+          // Determine extension from the compressed file's actual type
+          let ext = 'jpg'
+          if (compressed.type === 'application/pdf') ext = 'pdf'
+          else if (compressed.name && compressed.name.includes('.')) {
+            const e = compressed.name.split('.').pop().toLowerCase()
+            if (['jpg','jpeg','png','pdf','webp'].includes(e)) ext = e
+          }
           const path = `${doctorId}/${type}.${ext}`
-          await supabase.storage.from(BUCKET).upload(path, compressed, { upsert: true })
+          // Upload and CHECK for errors
+          const { error: upErr } = await supabase.storage
+            .from(BUCKET)
+            .upload(path, compressed, { upsert: true, contentType: compressed.type || 'image/jpeg' })
+          if (upErr) {
+            throw new Error(`Failed to upload ${type}: ${upErr.message}`)
+          }
+          // Only save the DB record AFTER successful upload
           await supabase.from('documents').insert([{ doctor_id: doctorId, document_type: type, file_url: path }])
         }
+        // If upload fails, the whole registration reports the error
         await uploadDoc(passportFile, 'passport')
         await uploadDoc(syndicateFile, 'syndicate')
       }

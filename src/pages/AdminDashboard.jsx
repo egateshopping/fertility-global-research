@@ -108,15 +108,28 @@ export default function AdminDashboard() {
   }
 
   const openSignedFile = async (filePath) => {
-    // Generate a signed URL (works even for private buckets)
+    // Try exact path first
     const { data, error } = await supabase.storage
       .from('doctor-documents')
       .createSignedUrl(filePath, 3600)
-    if (error) {
-      alert('File not found in storage. The member may have registered before document upload was required.\n\nPath: ' + filePath)
+    if (!error && data?.signedUrl) {
+      window.open(data.signedUrl, '_blank')
       return
     }
-    window.open(data.signedUrl, '_blank')
+    // Fallback: list the doctor's folder and find the matching document type
+    const folder = filePath.split('/')[0]
+    const docType = filePath.split('/')[1]?.split('.')[0] // 'passport' or 'syndicate'
+    const { data: list } = await supabase.storage.from('doctor-documents').list(folder)
+    if (list && list.length > 0) {
+      const match = list.find(f => f.name.startsWith(docType))
+      if (match) {
+        const { data: signed } = await supabase.storage
+          .from('doctor-documents')
+          .createSignedUrl(`${folder}/${match.name}`, 3600)
+        if (signed?.signedUrl) { window.open(signed.signedUrl, '_blank'); return }
+      }
+    }
+    alert('File not found in storage. This member may need to re-upload their documents.\n\nPath: ' + filePath)
   }
 
   // ---------- conference ----------

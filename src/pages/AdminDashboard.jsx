@@ -162,12 +162,12 @@ export default function AdminDashboard() {
   }
   const deleteDoctor = async (id) => {
     if (!confirm('حذف هذا الطبيب نهائياً؟ سيتم حذف دعواته ووثائقه أيضاً.')) return
-    // 1) Delete storage files
+    // 1) Delete storage files (get paths from documents table)
     try {
-      const { data: files } = await supabase.storage.from('doctor-documents').list(id)
-      if (files && files.length > 0) {
-        const paths = files.map(f => `${id}/${f.name}`)
-        await supabase.storage.from('doctor-documents').remove(paths)
+      const { data: docs } = await supabase.from('documents').select('file_url').eq('doctor_id', id)
+      if (docs && docs.length > 0) {
+        const paths = docs.map(d => d.file_url).filter(Boolean)
+        if (paths.length > 0) await supabase.storage.from('doctor-documents').remove(paths)
       }
     } catch (e) { /* ignore storage errors */ }
     // 2) Delete related records

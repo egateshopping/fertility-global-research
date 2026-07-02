@@ -270,6 +270,25 @@ export default function AdminDashboard() {
     fetchDoctors()
   }
 
+  const [adminEmailInput, setAdminEmailInput] = useState('')
+  const [adminMsg, setAdminMsg] = useState('')
+  const grantAdminByEmail = async () => {
+    const email = adminEmailInput.trim().toLowerCase()
+    if (!email) { setAdminMsg('Please enter an email'); return }
+    const { data, error } = await supabase.from('doctors').select('id, full_name, is_admin').eq('email', email).single()
+    if (error || !data) { setAdminMsg('❌ No member found with this email'); return }
+    if (data.is_admin) { setAdminMsg('ℹ️ This member is already an admin'); return }
+    await supabase.from('doctors').update({ is_admin: true }).eq('id', data.id)
+    setAdminMsg(`✅ ${data.full_name} is now an admin`)
+    setAdminEmailInput('')
+    fetchDoctors()
+  }
+  const revokeAdmin = async (id, name) => {
+    if (!confirm(`Remove admin rights from ${name}?`)) return
+    await supabase.from('doctors').update({ is_admin: false }).eq('id', id)
+    fetchDoctors()
+  }
+
   // ---------- issue invitation (review) ----------
   const selectedInvDoctor = doctors.find(d => d.id === inv.doctorId)
   const startInvitation = () => {
@@ -432,6 +451,7 @@ export default function AdminDashboard() {
         <button className={tab === 'invitations' ? 'atab active' : 'atab'} onClick={() => setTab('invitations')}>{t('admin_invitations')}</button>
         <button className={tab === 'reports' ? 'atab active' : 'atab'} onClick={() => setTab('reports')}>{t('admin_reports')}{reports.length ? ` (${reports.length})` : ''}</button>
         <button className={tab === 'pending' ? 'atab active' : 'atab'} onClick={() => setTab('pending')}>{t('admin_pending')}{pendingDoctors.length ? ` (${pendingDoctors.length})` : ''}</button>
+        <button className={tab === 'admins' ? 'atab active' : 'atab'} onClick={() => setTab('admins')}>🛡️ Admins</button>
         <button className={tab === 'inv-requests' ? 'atab active' : 'atab'} onClick={() => setTab('inv-requests')}>{t('admin_inv_requests')}{invitationRequests.length ? ` (${invitationRequests.length})` : ''}</button>
         <button className={tab === 'cert-requests' ? 'atab active' : 'atab'} onClick={() => setTab('cert-requests')}>{t('admin_certificates')}{certRequests.length ? ` (${certRequests.length})` : ''}</button>
         <button className={tab === 'activities' ? 'atab active' : 'atab'} onClick={() => setTab('activities')}>{t('admin_activities')}</button>
@@ -569,13 +589,6 @@ export default function AdminDashboard() {
                     <td className="row-actions">
                       <button className="mini" onClick={() => openDoctorFiles(d)}>{t('admin_files')}</button>
                       <button className="mini" onClick={() => setEditDoctor({ ...d })}>{t('admin_edit')}</button>
-                      <button
-                        className={d.is_admin ? 'mini danger' : 'mini admin-btn'}
-                        onClick={() => toggleAdmin(d)}
-                        title={d.is_admin ? 'إلغاء صلاحية الأدمن' : 'تعيين كأدمن'}
-                      >
-                        {d.is_admin ? '🔴 إلغاء أدمن' : '🟢 تعيين أدمن'}
-                      </button>
                       <button
                         className={d.visible === false ? 'mini' : 'mini danger'}
                         style={{ background: d.visible === false ? '#e8f7ee' : '#fff3cd', color: d.visible === false ? '#1a7a4f' : '#856404' }}
@@ -724,6 +737,52 @@ export default function AdminDashboard() {
 
 
       {/* PENDING APPROVALS */}
+      {/* ADMINS MANAGEMENT */}
+      {tab === 'admins' && (
+        <div className="panel">
+          <h3 style={{ color: 'var(--navy)', marginBottom: '.5rem' }}>🛡️ Admin Management</h3>
+          <p className="muted" style={{ fontSize: '.88rem', marginBottom: '1rem' }}>
+            Grant admin access to an existing member by entering their registered email.
+          </p>
+          <div style={{ display: 'flex', gap: '.6rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+            <input className="auth-input ltr-input" dir="ltr" style={{ flex: 1, minWidth: 240 }}
+              placeholder="member@email.com"
+              value={adminEmailInput}
+              onChange={e => { setAdminEmailInput(e.target.value); setAdminMsg('') }} />
+            <button className="btn-primary" onClick={grantAdminByEmail}>Grant Admin Access</button>
+          </div>
+          {adminMsg && (
+            <div style={{ padding: '.7rem 1rem', borderRadius: 8, marginBottom: '1rem', fontSize: '.9rem',
+              background: adminMsg.startsWith('✅') ? '#e8f7ee' : adminMsg.startsWith('ℹ️') ? '#e8f4ff' : '#fdecea',
+              color: adminMsg.startsWith('✅') ? '#1a7a4f' : adminMsg.startsWith('ℹ️') ? '#0B2E5C' : '#c0392b' }}>
+              {adminMsg}
+            </div>
+          )}
+
+          <h4 style={{ color: 'var(--navy)', marginTop: '1.5rem', marginBottom: '.8rem' }}>Current Admins</h4>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Actions</th></tr></thead>
+              <tbody>
+                {doctors.filter(d => d.is_admin).map(d => (
+                  <tr key={d.id}>
+                    <td><strong>{d.full_name}</strong></td>
+                    <td>{d.email}</td>
+                    <td className="row-actions">
+                      <button className="mini danger" onClick={() => revokeAdmin(d.id, d.full_name)}>Remove Admin</button>
+                    </td>
+                  </tr>
+                ))}
+                {doctors.filter(d => d.is_admin).length === 0 && (
+                  <tr><td colSpan="3" className="muted center-td">No admins yet</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* PENDING */}
       {tab === 'pending' && (
         <div className="panel">
           <h3>Pending Membership Approvals</h3>
@@ -735,6 +794,7 @@ export default function AdminDashboard() {
                   <tr key={d.id}>
                     <td>{d.full_name}</td><td>{d.specialty}</td><td>{d.nationality}</td><td>{d.email}</td>
                     <td className="row-actions">
+                      <button className="mini" style={{background:'#e8f4ff',color:'#0B2E5C'}} onClick={() => openDoctorFiles(d)}>📁 {t('admin_files')}</button>
                       <button className="mini admin-btn" onClick={() => approveDoctor(d.id)}>✅ Approve</button>
                       <button className="mini danger" onClick={() => rejectDoctor(d.id)}>❌ Reject</button>
                     </td>

@@ -112,7 +112,7 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
   const [f, setF] = useState({
     email: '', password: '', passwordConfirm: '',
     fullName: '', phone: '',
-    profession: 'doctor', specialty: '', hospital: '',
+    profession: 'doctor', specialty: '', hospital: '', affiliation: '',
     clinicAddress: '', passportNumber: '', syndicateId: '',
     nationality: '', city: '', governorate: '',
     dateOfBirth: '', syndicateJoinDate: '', address: '',
@@ -245,6 +245,7 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
         profession: f.profession,
         specialty: f.specialty,
         hospital: f.hospital,
+        affiliation: f.affiliation || null,
         clinic_address: f.clinicAddress || null,
         phone: f.phone || null,
         passport_number: f.passportNumber,
@@ -353,6 +354,7 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
             </select>
             <input className="auth-input ltr-input" name="specialty" placeholder="Specialty *" value={f.specialty} onChange={ch} dir="ltr" />
             <input className="auth-input ltr-input" name="hospital" placeholder="Hospital / Workplace *" value={f.hospital} onChange={ch} dir="ltr" />
+            <input className="auth-input ltr-input" name="affiliation" placeholder="Affiliation / Institution (e.g. Al-Washaq Scientific Bureau)" value={f.affiliation} onChange={ch} dir="ltr" />
             <input className="auth-input ltr-input" name="clinicAddress" placeholder="Clinic Address" value={f.clinicAddress} onChange={ch} dir="ltr" />
 
             <div className="reg-section">Identity</div>

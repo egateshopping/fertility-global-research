@@ -92,3 +92,11 @@ ALTER TABLE doctors ADD COLUMN IF NOT EXISTS visible BOOLEAN DEFAULT TRUE;
 
 -- 12) Update invitation letter text to support workshops
 -- (handled in code, no SQL needed)
+
+-- 13) Affiliation column (separate from specialty)
+ALTER TABLE doctors ADD COLUMN IF NOT EXISTS affiliation TEXT;
+
+-- 14) Backfill missing cert_numbers for existing certificates
+UPDATE certificate_requests
+SET cert_number = 'FGR-CERT-' || floor(random() * 9000 + 1000)::text || '-2026'
+WHERE cert_number IS NULL AND status = 'approved';

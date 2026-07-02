@@ -221,6 +221,14 @@ export default function AdminDashboard() {
     if (!doctor) { alert('Doctor not found'); return }
     if (!conference) { alert('Conference not found'); return }
 
+    // Prevent duplicate invitation for the same doctor + same conference
+    const { data: dup } = await supabase.from('invitations')
+      .select('id').eq('doctor_id', inv.doctorId).eq('conference_id', inv.conferenceId)
+    if (dup && dup.length > 0) {
+      alert('⚠️ This doctor already has an invitation for this conference. Only one invitation per conference is allowed.')
+      return
+    }
+
     let invNumber = inv.number || generateInvitationNumber()
     const issueDate = inv.issueDate || new Date().toISOString().split('T')[0]
 
@@ -337,15 +345,19 @@ export default function AdminDashboard() {
   const approveDoctor = async (id) => {
     const doctor = pendingDoctors.find(d => d.id === id) || doctors.find(d => d.id === id)
     await supabase.from('doctors').update({ status: 'approved' }).eq('id', id)
-    // Auto-create certificate record on approval
-    const issueDate = new Date().toISOString().split('T')[0]
-    const certNumber = `FGR-CERT-${Math.floor(1000 + Math.random() * 9000)}-${new Date().getFullYear()}`
-    await supabase.from('certificate_requests').insert([{
-      doctor_id: id,
-      status: 'approved',
-      issued_date: issueDate,
-      cert_number: certNumber
-    }])
+    // Check if certificate already exists — one certificate per member
+    const { data: existing } = await supabase.from('certificate_requests')
+      .select('id').eq('doctor_id', id).eq('status', 'approved')
+    if (!existing || existing.length === 0) {
+      const issueDate = new Date().toISOString().split('T')[0]
+      const certNumber = `FGR-CERT-${Math.floor(1000 + Math.random() * 9000)}-${new Date().getFullYear()}`
+      await supabase.from('certificate_requests').insert([{
+        doctor_id: id,
+        status: 'approved',
+        issued_date: issueDate,
+        cert_number: certNumber
+      }])
+    }
     // Send approval email (non-blocking)
     if (doctor?.email) notifyApproved(doctor.email, (doctor.full_name || '').trim())
     fetchPending()
@@ -598,8 +610,19 @@ export default function AdminDashboard() {
                         {d.visible === false ? '👁 Show' : '🙈 Hide'}
                       </button>
                       <button className="mini" style={{background:'#e8f4ff',color:'#0B2E5C'}} onClick={async () => {
-                        const cert = certRequests.find(r => r.doctor_id === d.id && r.status === 'approved')
-                        if (!cert) { alert('No approved certificate for this doctor yet.'); return }
+                        if (d.status !== 'approved') { alert('Approve this member first before issuing a certificate.'); return }
+                        let cert = certRequests.find(r => r.doctor_id === d.id && r.status === 'approved')
+                        // Manual fallback: create certificate if it doesn't exist
+                        if (!cert) {
+                          const issueDate = new Date().toISOString().split('T')[0]
+                          const certNumber = `FGR-CERT-${Math.floor(1000 + Math.random() * 9000)}-${new Date().getFullYear()}`
+                          const { data: newCert, error } = await supabase.from('certificate_requests').insert([{
+                            doctor_id: d.id, status: 'approved', issued_date: issueDate, cert_number: certNumber
+                          }]).select().single()
+                          if (error) { alert('Could not create certificate: ' + error.message); return }
+                          cert = newCert
+                          fetchCertRequests()
+                        }
                         const { generateCertificatePDF } = await import('../utils/certificateGenerator.js')
                         const pdf = await generateCertificatePDF(d, cert.cert_number || 'FGR-CERT', cert.issued_date)
                         pdf.save(`Certificate-${(d.full_name||'').trim()}.pdf`)
@@ -1003,6 +1026,7 @@ export default function AdminDashboard() {
               <input className="auth-input" value={editDoctor.full_name || ''} onChange={e => setEditDoctor({ ...editDoctor, full_name: e.target.value })} placeholder="Full Name" />
               <input className="auth-input" value={editDoctor.specialty || ''} onChange={e => setEditDoctor({ ...editDoctor, specialty: e.target.value })} placeholder="Specialty" />
               <input className="auth-input" value={editDoctor.hospital || ''} onChange={e => setEditDoctor({ ...editDoctor, hospital: e.target.value })} placeholder="Hospital" />
+              <input className="auth-input" value={editDoctor.affiliation || ''} onChange={e => setEditDoctor({ ...editDoctor, affiliation: e.target.value })} placeholder="Affiliation / Institution" />
               <input className="auth-input" value={editDoctor.passport_number || ''} onChange={e => setEditDoctor({ ...editDoctor, passport_number: e.target.value })} placeholder="Passport No." />
               <input className="auth-input" value={editDoctor.syndicate_id || ''} onChange={e => setEditDoctor({ ...editDoctor, syndicate_id: e.target.value })} placeholder="Syndicate ID" />
               <input className="auth-input" value={editDoctor.nationality || ''} onChange={e => setEditDoctor({ ...editDoctor, nationality: e.target.value })} placeholder="Nationality" />

@@ -149,46 +149,54 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   const nameWidth = Math.min(pdf.getStringUnitWidth(`Dr. ${doctor.full_name}`) * 22 / pdf.internal.scaleFactor + 20, 180)
   pdf.line(W/2 - nameWidth/2, 93, W/2 + nameWidth/2, 93)
 
-  // Body text
+  // Body text — corrected grammar
   pdf.setFont('Times', 'italic')
   pdf.setFontSize(12)
   pdf.setTextColor(...black)
-  pdf.text('Is an active member of the Global Fertility Research', W / 2, 103, { align: 'center' })
 
-  const year = issueDate ? issueDate.split('-')[0] : new Date().getFullYear()
-  const nextYear = parseInt(year) + 1
+  const year = issueDate ? issueDate.split('-')[0] : String(new Date().getFullYear())
 
-  pdf.text(`For the year ${year} and has agreed to abide by the Association's constitution and code of practice.`, W / 2, 113, { align: 'center' })
-  pdf.text(`This membership is due for renewal in December ${nextYear}.`, W / 2, 122, { align: 'center' })
+  pdf.text(`is an active member of Global Fertility Research for the year ${year},`, W / 2, 103, { align: 'center' })
+  pdf.text(`and has agreed to abide by the Association's constitution and code of practice.`, W / 2, 111, { align: 'center' })
+  pdf.text(`This membership is valid until 31 December ${year}.`, W / 2, 121, { align: 'center' })
 
-  // Specialty line
+  // Specialty + Affiliation lines (separated)
+  let detailY = 131
   if (doctor.specialty) {
     pdf.setFont('Times', 'italic')
     pdf.setFontSize(10.5)
     pdf.setTextColor(...grey)
-    pdf.text(`Specialty: ${doctor.specialty}${doctor.hospital ? '  |  ' + doctor.hospital : ''}`, W / 2, 131, { align: 'center' })
+    pdf.text(`Specialty: ${doctor.specialty}`, W / 2, detailY, { align: 'center' })
+    detailY += 6
+  }
+  if (doctor.affiliation || doctor.hospital) {
+    pdf.setFont('Times', 'italic')
+    pdf.setFontSize(10.5)
+    pdf.setTextColor(...grey)
+    pdf.text(`Affiliation: ${doctor.affiliation || doctor.hospital}`, W / 2, detailY, { align: 'center' })
   }
 
   // ── SIGNATURE ─────────────────────────────────────────────────────────────
   try {
     const sig = await loadSignatureTransparent('/signature.png', 300)
-    if (sig) pdf.addImage(sig, 'PNG', W/2 - 25, 136, 50, 18)
+    if (sig) pdf.addImage(sig, 'PNG', W/2 - 25, 143, 50, 18)
   } catch (_) {}
 
   // Gold line above name
   pdf.setDrawColor(...goldL)
   pdf.setLineWidth(0.5)
-  pdf.line(W/2 - 35, 156, W/2 + 35, 156)
+  pdf.line(W/2 - 35, 163, W/2 + 35, 163)
 
   pdf.setFont('Times', 'bold')
   pdf.setFontSize(12)
   pdf.setTextColor(...navy)
-  pdf.text('Mohammed Khayyat', W / 2, 162, { align: 'center' })
+  pdf.text('Mohammed Al-Khayat', W / 2, 169, { align: 'center' })
 
   pdf.setFont('Times', 'italic')
-  pdf.setFontSize(10)
+  pdf.setFontSize(9.5)
   pdf.setTextColor(...grey)
-  pdf.text('MBChB, MSc — President of Global Fertility Research', W / 2, 169, { align: 'center' })
+  pdf.text('MBChB, MSc', W / 2, 175, { align: 'center' })
+  pdf.text('President of Global Fertility Research', W / 2, 180, { align: 'center' })
 
   // ── QR CODE — bottom right corner ─────────────────────────────────────────
   try {

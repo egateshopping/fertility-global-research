@@ -190,7 +190,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   pdf.setFont('Times', 'bold')
   pdf.setFontSize(12)
   pdf.setTextColor(...navy)
-  pdf.text('Mohammed Al-Khayat', W / 2, 169, { align: 'center' })
+  pdf.text('Mohammed Khayyat', W / 2, 169, { align: 'center' })
 
   pdf.setFont('Times', 'italic')
   pdf.setFontSize(9.5)

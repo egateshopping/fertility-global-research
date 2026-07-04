@@ -172,10 +172,10 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   pdf.setTextColor(...black)
 
   const paras = [
-    `The programme will include a variety of scientific presentations covering the recent advances in fertility medicine and reproductive science. There will be sessions on ${conference.start_date || 'the first day'} to cover medical education and training.`,
-    `Global Fertility Research was established to maintain and strengthen active interaction within the medical community in the UK and internationally. The participation of consultants and experts from across the world helps to promote advances in healthcare services.`,
-    `This medical conference will bring together leading medical professionals from around the world to discuss the latest advancements, research findings, and best practices in Medicine and fertility science.`,
-    `We believe your expertise as ${doctor.specialty ? 'a specialist in ' + doctor.specialty : 'a qualified medical professional'} at ${doctor.hospital || 'your institution'} would be a valuable addition to the conference. Your participation and input in the scientific programme will help to discuss the challenges facing health professionals and healthcare services.`,
+    `The programme will feature a series of scientific presentations covering recent advances in fertility medicine and reproductive science, along with dedicated sessions for medical education and professional training${conference.start_date ? ' commencing on ' + conference.start_date : ''}.`,
+    `Global Fertility Research was established to foster and strengthen active collaboration within the medical community, both in the United Kingdom and internationally. The participation of distinguished consultants and experts from around the world contributes significantly to the advancement of healthcare services.`,
+    `This event brings together leading medical professionals from across the globe to exchange knowledge, present research findings, and share best practices in medicine and fertility science.`,
+    `We believe that your expertise${doctor.specialty ? ' as a specialist in ' + doctor.specialty : ''}${doctor.hospital ? ' at ' + doctor.hospital : ''} would be a valuable addition to this gathering. Your participation and insights will enrich the scientific programme and support meaningful discussion on the challenges facing healthcare professionals today.`,
 
   ]
 
@@ -313,9 +313,9 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
   // CPD & Networking
   pdf.setFont('Helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(...black)
   const p2paras = [
-    'We are excited to have you join us for this important event, which will feature world-renowned speakers and experts in a variety of medical fields. The conference will cover a wide range of topics and will attract recognition from the Royal College of Physicians for the purpose of Continuous Professional Development (CPD).',
-    'In addition to the educational sessions, the conference will also offer opportunities for networking and socializing. We encourage you to take advantage of these opportunities to meet other medical professionals from around the world.',
-    'Please note that you will need to check in at the registration desk on the day of the conference to receive your badge and materials. If you have any questions, please do not hesitate to contact us.',
+    'We are delighted to welcome you to this important event, which will feature distinguished speakers and experts across a range of medical fields. The programme covers a wide array of topics and is recognised by the Royal College of Physicians for the purpose of Continuing Professional Development (CPD).',
+    'In addition to the educational sessions, the event offers valuable opportunities for networking and professional exchange. We warmly encourage you to connect with fellow medical professionals from around the world.',
+    'Please note that you will be required to check in at the registration desk on the day of the event to collect your badge and materials. Should you have any questions, please do not hesitate to contact us.',
   ]
 
   p2paras.forEach(para => {
@@ -349,8 +349,8 @@ export const generateInvitationPDF = async (doctor, conference, invitation) => {
 
   y += 8
   pdf.setFont('Helvetica', 'normal'); pdf.setFontSize(9.5); pdf.setTextColor(...black)
-  pdf.text('Thank you for registering for the Annual Medical Conference 2026!', 105, y, { align: 'center' }); y += 6
-  pdf.text('We look forward to seeing you at the conference.', 105, y, { align: 'center' }); y += 10
+  pdf.text(`Thank you for registering for ${conference.title || 'this event'}.`, 105, y, { align: 'center' }); y += 6
+  pdf.text('We look forward to welcoming you.', 105, y, { align: 'center' }); y += 10
   pdf.text('Sincerely,', 20, y); y += 10
 
   try {

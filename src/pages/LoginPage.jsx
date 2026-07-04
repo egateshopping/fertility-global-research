@@ -135,6 +135,7 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
   const validateStep1 = () => {
     if (!f.fullName.trim()) return 'Full name is required'
     if (!f.email.trim()) return 'Email is required'
+    if (!f.dateOfBirth) return 'Date of birth is required'
     if (!f.password || f.password.length < 8) return 'Password must be at least 8 characters'
     if (f.password !== f.passwordConfirm) return 'Passwords do not match'
     return null
@@ -142,7 +143,7 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
 
   const validateStep2 = () => {
     if (!f.specialty.trim()) return 'Specialty is required'
-    if (!f.hospital.trim()) return 'Hospital / Workplace is required'
+    if (!f.hospital.trim()) return 'Workplace is required'
     if (!f.passportNumber.trim()) return 'Passport number is required'
     if (!f.nationality) return 'Nationality is required'
     if (!f.city.trim()) return 'City is required'
@@ -322,6 +323,8 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
             <input className="auth-input ltr-input" name="fullName" placeholder="Full Name — as on passport *" value={f.fullName} onChange={ch} dir="ltr" />
             <input className="auth-input ltr-input" name="email" type="email" placeholder="Email Address *" value={f.email} onChange={ch} dir="ltr" />
             <input className="auth-input ltr-input" name="phone" type="tel" placeholder="Phone Number" value={f.phone} onChange={ch} dir="ltr" />
+            <label className="auth-label-sm">Date of Birth *</label>
+            <input className="auth-input ltr-input" name="dateOfBirth" type="date" value={f.dateOfBirth} onChange={ch} dir="ltr" />
             <div className="pw-wrap">
               <input className="auth-input ltr-input" name="password" type={showPw ? 'text' : 'password'} placeholder="Password * (min. 8 characters)" value={f.password} onChange={ch} minLength={8} dir="ltr" />
               <EyeButton shown={showPw} onClick={() => setShowPw(s => !s)} />
@@ -353,24 +356,18 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
               <option value="medical">Other Medical Profession</option>
             </select>
             <input className="auth-input ltr-input" name="specialty" placeholder="Specialty *" value={f.specialty} onChange={ch} dir="ltr" />
-            <input className="auth-input ltr-input" name="hospital" placeholder="Hospital / Workplace *" value={f.hospital} onChange={ch} dir="ltr" />
+            <input className="auth-input ltr-input" name="hospital" placeholder="Workplace / مكان العمل *" value={f.hospital} onChange={ch} dir="ltr" />
             <input className="auth-input ltr-input" name="affiliation" placeholder="Affiliation / Institution (e.g. Al-Washaq Scientific Bureau)" value={f.affiliation} onChange={ch} dir="ltr" />
-            <input className="auth-input ltr-input" name="clinicAddress" placeholder="Clinic Address" value={f.clinicAddress} onChange={ch} dir="ltr" />
 
             <div className="reg-section">Identity</div>
             <input className="auth-input ltr-input" name="passportNumber" placeholder="Passport Number *" value={f.passportNumber} onChange={ch} dir="ltr" />
-            <input className="auth-input ltr-input" name="syndicateId" placeholder="Syndicate / Union ID" value={f.syndicateId} onChange={ch} dir="ltr" />
+            <input className="auth-input ltr-input" name="syndicateId" placeholder="Work ID No. / Syndicate No." value={f.syndicateId} onChange={ch} dir="ltr" />
             <select className="auth-input" name="nationality" value={f.nationality} onChange={ch} required>
               <option value="">Select Nationality *</option>
               {COUNTRIES.map(c => <option key={c.code} value={c.en}>{c.flag} {c.en}</option>)}
             </select>
             <input className="auth-input ltr-input" name="city" placeholder="City *" value={f.city} onChange={ch} dir="ltr" />
             <input className="auth-input ltr-input" name="governorate" placeholder="Governorate / Province" value={f.governorate} onChange={ch} dir="ltr" />
-            <input className="auth-input ltr-input" name="address" placeholder="Home / Work Address" value={f.address} onChange={ch} dir="ltr" />
-            <label className="auth-label-sm">Date of Birth</label>
-            <input className="auth-input ltr-input" name="dateOfBirth" type="date" value={f.dateOfBirth} onChange={ch} dir="ltr" />
-            <label className="auth-label-sm">Syndicate Join Date</label>
-            <input className="auth-input ltr-input" name="syndicateJoinDate" type="date" value={f.syndicateJoinDate} onChange={ch} dir="ltr" />
             <label className="auth-check">
               <input type="checkbox" name="fertilitySpecialist" checked={f.fertilitySpecialist} onChange={ch} />
               <span>Fertility Specialist</span>
@@ -428,6 +425,9 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
                   onChange={e => setSyndicateFile(e.target.files[0])} />
               </label>
             </div>
+            <p className="muted" style={{ fontSize: '.8rem', marginTop: '-.4rem', marginBottom: '.6rem', color: '#856404' }}>
+              📌 Note: The uploaded card must clearly show all details and information (name, ID number, issue/expiry, and issuing body).
+            </p>
 
             {!passportFile || !syndicateFile ? (
               <div className="auth-error" style={{ background: '#fff3cd', border: '1px solid #ffc107', color: '#856404' }}>

@@ -33,6 +33,7 @@ export default function AdminDashboard() {
 
   // modals
   const [viewDoctor, setViewDoctor] = useState(null)
+  const [detailsDoctor, setDetailsDoctor] = useState(null)
   const [editDoctor, setEditDoctor] = useState(null)
   const [docFiles, setDocFiles] = useState([])
 
@@ -184,9 +185,12 @@ export default function AdminDashboard() {
   // ---------- export ----------
   const exportExcel = () => {
     const rows = filteredDoctors.map(d => ({
-      'Name': d.full_name, 'Specialty': d.specialty, 'Hospital': d.hospital,
-      'Passport': d.passport_number, 'Nationality': d.nationality,
-      'Years': d.years_of_experience, 'Email': d.email
+      'Name': d.full_name, 'Email': d.email, 'Phone': d.phone,
+      'Date of Birth': d.date_of_birth, 'Profession': d.profession,
+      'Specialty': d.specialty, 'Workplace': d.hospital, 'Affiliation': d.affiliation,
+      'Passport': d.passport_number, 'Work ID/Syndicate': d.syndicate_id,
+      'Nationality': d.nationality, 'City': d.city, 'Governorate': d.governorate,
+      'Status': d.status
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
@@ -599,6 +603,7 @@ export default function AdminDashboard() {
                   <tr key={d.id}>
                     <td>{d.full_name}</td><td>{d.specialty}</td><td>{d.nationality}</td><td>{d.passport_number}</td>
                     <td className="row-actions">
+                      <button className="mini" style={{background:'#eef',color:'#0B2E5C'}} onClick={() => setDetailsDoctor(d)}>👁 التفاصيل</button>
                       <button className="mini" onClick={() => openDoctorFiles(d)}>{t('admin_files')}</button>
                       <button className="mini" onClick={() => setEditDoctor({ ...d })}>{t('admin_edit')}</button>
                       <button
@@ -817,6 +822,7 @@ export default function AdminDashboard() {
                   <tr key={d.id}>
                     <td>{d.full_name}</td><td>{d.specialty}</td><td>{d.nationality}</td><td>{d.email}</td>
                     <td className="row-actions">
+                      <button className="mini" style={{background:'#eef',color:'#0B2E5C'}} onClick={() => setDetailsDoctor(d)}>👁 التفاصيل</button>
                       <button className="mini" style={{background:'#e8f4ff',color:'#0B2E5C'}} onClick={() => openDoctorFiles(d)}>📁 {t('admin_files')}</button>
                       <button className="mini admin-btn" onClick={() => approveDoctor(d.id)}>✅ Approve</button>
                       <button className="mini danger" onClick={() => rejectDoctor(d.id)}>❌ Reject</button>
@@ -994,6 +1000,43 @@ export default function AdminDashboard() {
             <div className="two-col" style={{marginTop:'1rem'}}>
               <button className="btn-primary" onClick={saveEditConference}>💾 Save</button>
               <button className="btn-soft" onClick={() => setEditConference(null)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* DOCTOR FULL DETAILS MODAL */}
+      {detailsDoctor && (
+        <div className="modal-overlay" onClick={() => setDetailsDoctor(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
+            <h3 style={{ color: 'var(--navy)', marginBottom: '1rem' }}>👤 {detailsDoctor.full_name}</h3>
+            <div className="profile-grid">
+              {[
+                ['Full Name', detailsDoctor.full_name],
+                ['Email', detailsDoctor.email],
+                ['Phone', detailsDoctor.phone],
+                ['Date of Birth', detailsDoctor.date_of_birth],
+                ['Profession', detailsDoctor.profession],
+                ['Specialty', detailsDoctor.specialty],
+                ['Workplace', detailsDoctor.hospital],
+                ['Affiliation', detailsDoctor.affiliation],
+                ['Passport No.', detailsDoctor.passport_number],
+                ['Work ID / Syndicate No.', detailsDoctor.syndicate_id],
+                ['Nationality', detailsDoctor.nationality],
+                ['City', detailsDoctor.city],
+                ['Governorate', detailsDoctor.governorate],
+                ['Fertility Specialist', detailsDoctor.fertility_specialist ? 'Yes' : 'No'],
+                ['Status', detailsDoctor.status],
+                ['Registered', (detailsDoctor.created_at || '').split('T')[0]],
+              ].map(([label, value]) => (
+                <div key={label} className="profile-field">
+                  <span className="profile-label">{label}</span>
+                  <span className="profile-value">{value || '—'}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '.6rem', marginTop: '1rem' }}>
+              <button className="btn-primary" onClick={() => { openDoctorFiles(detailsDoctor); setDetailsDoctor(null) }}>📁 View Documents</button>
+              <button className="btn-soft" onClick={() => setDetailsDoctor(null)}>إغلاق</button>
             </div>
           </div>
         </div>

@@ -195,8 +195,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   pdf.setFont('Times', 'italic')
   pdf.setFontSize(9.5)
   pdf.setTextColor(...grey)
-  pdf.text('MBChB, MSc', W / 2, 175, { align: 'center' })
-  pdf.text('President of Global Fertility Research', W / 2, 180, { align: 'center' })
+  pdf.text('President of Global Fertility Research', W / 2, 176, { align: 'center' })
 
   // ── QR CODE — bottom right corner ─────────────────────────────────────────
   try {

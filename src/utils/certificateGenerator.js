@@ -221,7 +221,7 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   pdf.setFont('Helvetica', 'normal')
   pdf.setFontSize(7.5)
   pdf.setTextColor(...white)
-  pdf.text('Global Fertility Research  |  London, United Kingdom  |  Company Reg: 17263260', W/2, H - 13, { align: 'center' })
+  pdf.text('Global Fertility Research  |  London, United Kingdom  |  Company Reg: 17263260  |  +44 7418 602220', W/2, H - 13, { align: 'center' })
 
   return pdf
 }

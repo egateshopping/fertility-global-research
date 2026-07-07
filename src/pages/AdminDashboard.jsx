@@ -284,6 +284,33 @@ export default function AdminDashboard() {
 
   const [adminEmailInput, setAdminEmailInput] = useState('')
   const [adminMsg, setAdminMsg] = useState('')
+  const [certDoctorId, setCertDoctorId] = useState('')
+  const [certMsg, setCertMsg] = useState('')
+
+  const issueCertManual = async () => {
+    if (!certDoctorId) { setCertMsg('Please select a member'); return }
+    const doctor = doctors.find(d => d.id === certDoctorId)
+    if (!doctor) { setCertMsg('Member not found'); return }
+    if (doctor.status !== 'approved') { setCertMsg('⚠️ This member must be approved first'); return }
+    // Check for existing certificate
+    let cert = certRequests.find(r => r.doctor_id === certDoctorId && r.status === 'approved')
+    if (!cert) {
+      const issueDate = new Date().toISOString().split('T')[0]
+      const certNumber = `FGR-CERT-${Math.floor(1000 + Math.random() * 9000)}-${new Date().getFullYear()}`
+      const { data: newCert, error } = await supabase.from('certificate_requests').insert([{
+        doctor_id: certDoctorId, status: 'approved', issued_date: issueDate, cert_number: certNumber
+      }]).select().single()
+      if (error) { setCertMsg('Error: ' + error.message); return }
+      cert = newCert
+      fetchCertRequests()
+      setCertMsg(`✅ New certificate issued: ${certNumber}`)
+    } else {
+      setCertMsg(`ℹ️ Existing certificate: ${cert.cert_number} — downloading`)
+    }
+    const { generateCertificatePDF } = await import('../utils/certificateGenerator.js')
+    const pdf = await generateCertificatePDF(doctor, cert.cert_number || 'FGR-CERT', cert.issued_date)
+    pdf.save(`Certificate-${(doctor.full_name||'').trim()}.pdf`)
+  }
   const grantAdminByEmail = async () => {
     const email = adminEmailInput.trim().toLowerCase()
     if (!email) { setAdminMsg('Please enter an email'); return }
@@ -386,8 +413,13 @@ export default function AdminDashboard() {
   }
   const saveEditInvitation = async () => {
     if (!editInvitation) return
-    const { id, doctor_id, conference_id, invitation_number, issue_date, travel_date } = editInvitation
+    const { id, doctor_id, conference_id, invitation_number, issue_date, travel_date, corrected_name } = editInvitation
     await supabase.from('invitations').update({ doctor_id, conference_id, invitation_number, issue_date, travel_date }).eq('id', id)
+    // If a corrected name was provided, update the doctor's profile so passport, profile and invitation all match
+    if (corrected_name && corrected_name.trim()) {
+      await supabase.from('doctors').update({ full_name: corrected_name.trim() }).eq('id', doctor_id)
+      fetchDoctors()
+    }
     setEditInvitation(null)
     fetchInvitations()
   }
@@ -464,11 +496,13 @@ export default function AdminDashboard() {
         <button className={tab === 'doctors' ? 'atab active' : 'atab'} onClick={() => setTab('doctors')}>{t('admin_doctors')}</button>
         <button className={tab === 'conferences' ? 'atab active' : 'atab'} onClick={() => setTab('conferences')}>{t('admin_conferences')}</button>
         <button className={tab === 'invite' ? 'atab active' : 'atab'} onClick={() => setTab('invite')}>{t('admin_invite')}</button>
+        <button className={tab === 'issue-cert' ? 'atab active' : 'atab'} onClick={() => setTab('issue-cert')}>🎓 Issue Certificate</button>
         <button className={tab === 'invitations' ? 'atab active' : 'atab'} onClick={() => setTab('invitations')}>{t('admin_invitations')}</button>
         <button className={tab === 'reports' ? 'atab active' : 'atab'} onClick={() => setTab('reports')}>{t('admin_reports')}{reports.length ? ` (${reports.length})` : ''}</button>
         <button className={tab === 'pending' ? 'atab active' : 'atab'} onClick={() => setTab('pending')}>{t('admin_pending')}{pendingDoctors.length ? ` (${pendingDoctors.length})` : ''}</button>
         <button className={tab === 'admins' ? 'atab active' : 'atab'} onClick={() => setTab('admins')}>🛡️ Admins</button>
-        <button className={tab === 'inv-requests' ? 'atab active' : 'atab'} onClick={() => setTab('inv-requests')}>{t('admin_inv_requests')}{invitationRequests.length ? ` (${invitationRequests.length})` : ''}</button>
+        <button className={tab === 'inv-requests' ? 'atab active' : 'atab'} onClick={() => setTab('inv-requests')}>{t('admin_inv_requests')}{invitationRequests.filter(r => r.status === 'new').length ? ` (${invitationRequests.filter(r => r.status === 'new').length})` : ''}</button>
+        <button className={tab === 'inv-archive' ? 'atab active' : 'atab'} onClick={() => setTab('inv-archive')}>📦 Requests Archive</button>
         <button className={tab === 'cert-requests' ? 'atab active' : 'atab'} onClick={() => setTab('cert-requests')}>{t('admin_certificates')}{certRequests.length ? ` (${certRequests.length})` : ''}</button>
         <button className={tab === 'activities' ? 'atab active' : 'atab'} onClick={() => setTab('activities')}>{t('admin_activities')}</button>
       </div>
@@ -765,6 +799,32 @@ export default function AdminDashboard() {
 
 
       {/* PENDING APPROVALS */}
+      {/* ISSUE CERTIFICATE (manual) */}
+      {tab === 'issue-cert' && (
+        <div className="panel">
+          <h3 style={{ color: 'var(--navy)', marginBottom: '.5rem' }}>🎓 Issue Membership Certificate</h3>
+          <p className="muted" style={{ fontSize: '.88rem', marginBottom: '1rem' }}>
+            Certificates are normally issued automatically on approval. Use this as a manual backup to issue or re-download a certificate for an approved member.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.8rem', maxWidth: 500 }}>
+            <select className="auth-input" value={certDoctorId} onChange={e => { setCertDoctorId(e.target.value); setCertMsg('') }}>
+              <option value="">— Select Approved Member —</option>
+              {doctors.filter(d => d.status === 'approved').map(d => (
+                <option key={d.id} value={d.id}>{(d.full_name || '').trim()} — {d.email}</option>
+              ))}
+            </select>
+            <button className="btn-primary" onClick={issueCertManual}>🎓 Issue / Download Certificate</button>
+          </div>
+          {certMsg && (
+            <div style={{ padding: '.7rem 1rem', borderRadius: 8, marginTop: '1rem', fontSize: '.9rem',
+              background: certMsg.startsWith('✅') ? '#e8f7ee' : certMsg.startsWith('ℹ️') ? '#e8f4ff' : '#fdecea',
+              color: certMsg.startsWith('✅') ? '#1a7a4f' : certMsg.startsWith('ℹ️') ? '#0B2E5C' : '#c0392b' }}>
+              {certMsg}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ADMINS MANAGEMENT */}
       {tab === 'admins' && (
         <div className="panel">
@@ -839,29 +899,49 @@ export default function AdminDashboard() {
       {/* INVITATION REQUESTS */}
       {tab === 'inv-requests' && (
         <div className="panel">
-          <h3>Invitation Requests from Visitors</h3>
+          <h3>New Invitation Requests</h3>
+          <p className="muted" style={{ fontSize: '.85rem', marginBottom: '1rem' }}>Pending requests awaiting action. Once issued, they move to the Requests Archive.</p>
           <div className="table-scroll">
             <table>
               <thead><tr><th>Name</th><th>Email</th><th>Specialty</th><th>Passport</th><th>Date</th><th>Action</th></tr></thead>
               <tbody>
-                {invitationRequests.map(r => (
+                {invitationRequests.filter(r => r.status === 'new').map(r => (
                   <tr key={r.id}>
                     <td>{r.full_name}</td><td>{r.email}</td><td>{r.specialty || '—'}</td>
                     <td>{r.passport_number}</td><td>{(r.created_at || '').split('T')[0]}</td>
                     <td className="row-actions">
-                      {r.status === 'new' && (
-                        <button className="mini admin-btn" onClick={() => issueFromRequest(r)}>
-                          ⚡ Issue
-                        </button>
-                      )}
+                      <button className="mini admin-btn" onClick={() => issueFromRequest(r)}>⚡ Issue</button>
                       <button className="mini danger" onClick={() => deleteInvitationRequest(r.id)}>حذف</button>
-                      <span style={{ fontSize: '.8rem', color: r.status === 'issued' ? '#27ae60' : '#f39c12', fontWeight: 700 }}>
-                        {r.status === 'issued' ? '✅ Issued' : '⏳ Pending'}
-                      </span>
                     </td>
                   </tr>
                 ))}
-                {invitationRequests.length === 0 && <tr><td colSpan="5" className="muted center-td">No requests</td></tr>}
+                {invitationRequests.filter(r => r.status === 'new').length === 0 && <tr><td colSpan="6" className="muted center-td">No new requests</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* INVITATION REQUESTS ARCHIVE */}
+      {tab === 'inv-archive' && (
+        <div className="panel">
+          <h3>📦 Requests Archive</h3>
+          <p className="muted" style={{ fontSize: '.85rem', marginBottom: '1rem' }}>Invitation requests that have already been issued.</p>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Name</th><th>Email</th><th>Specialty</th><th>Passport</th><th>Date</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>
+                {invitationRequests.filter(r => r.status === 'issued').map(r => (
+                  <tr key={r.id}>
+                    <td>{r.full_name}</td><td>{r.email}</td><td>{r.specialty || '—'}</td>
+                    <td>{r.passport_number}</td><td>{(r.created_at || '').split('T')[0]}</td>
+                    <td><span style={{ fontSize: '.8rem', color: '#27ae60', fontWeight: 700 }}>✅ Issued</span></td>
+                    <td className="row-actions">
+                      <button className="mini danger" onClick={() => deleteInvitationRequest(r.id)}>حذف</button>
+                    </td>
+                  </tr>
+                ))}
+                {invitationRequests.filter(r => r.status === 'issued').length === 0 && <tr><td colSpan="7" className="muted center-td">Archive is empty</td></tr>}
               </tbody>
             </table>
           </div>
@@ -941,6 +1021,14 @@ export default function AdminDashboard() {
               <select className="auth-input" value={editInvitation.doctor_id} onChange={e => setEditInvitation({...editInvitation, doctor_id: e.target.value})}>
                 {doctors.filter(d=>d.status==='approved').map(d => <option key={d.id} value={d.id}>{(d.full_name||'').trim()}</option>)}
               </select>
+              <label className="auth-label" style={{color:'#c0392b'}}>Correct Name Spelling (updates passport, profile & invitation)</label>
+              <input className="auth-input ltr-input" dir="ltr"
+                placeholder={(doctors.find(d => d.id === editInvitation.doctor_id)?.full_name || '').trim()}
+                value={editInvitation.corrected_name || ''}
+                onChange={e => setEditInvitation({...editInvitation, corrected_name: e.target.value})} />
+              <p className="muted" style={{fontSize:'.78rem',marginTop:'-.3rem'}}>
+                ⚠️ Leave empty to keep the current name. Enter a name only to fix spelling — it must match the passport exactly.
+              </p>
               <label className="auth-label">Conference</label>
               <select className="auth-input" value={editInvitation.conference_id} onChange={e => setEditInvitation({...editInvitation, conference_id: e.target.value})}>
                 {conferences.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}

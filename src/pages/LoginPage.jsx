@@ -98,7 +98,13 @@ export function LoginPage({ onSuccess, onSwitchPage, onBack }) {
           <button type="submit" className="btn-primary full" disabled={loading}>{loading ? 'Signing in...' : 'Sign In'}</button>
         </form>
         {onSwitchPage && (
-          <p className="auth-switch">Don't have an account?{' '}<button className="auth-link" onClick={onSwitchPage}>Create account</button></p>
+          <div style={{ marginTop: '1.2rem', paddingTop: '1.2rem', borderTop: '1px solid #e0e0e0', textAlign: 'center' }}>
+            <p className="muted" style={{ fontSize: '.9rem', marginBottom: '.7rem' }}>New to Global Fertility Research?</p>
+            <button type="button" className="btn-outline full" onClick={onSwitchPage}
+              style={{ borderColor: 'var(--teal)', color: 'var(--teal)', fontWeight: 700 }}>
+              ✚ Create New Account
+            </button>
+          </div>
         )}
         {onBack && <button className="auth-back" onClick={onBack}>← Back to site</button>}
       </div>
@@ -122,6 +128,7 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
   const [showPw2, setShowPw2] = useState(false)
   const [passportFile, setPassportFile] = useState(null)
   const [syndicateFile, setSyndicateFile] = useState(null)
+  const [syndicateBackFile, setSyndicateBackFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -153,7 +160,8 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
 
   const validateStep3 = () => {
     if (!passportFile) return 'Passport copy is required'
-    if (!syndicateFile) return 'Syndicate / Union card is required'
+    if (!syndicateFile) return 'Syndicate card (front) is required'
+    if (!syndicateBackFile) return 'Syndicate card (back) is required'
     return null
   }
 
@@ -230,6 +238,7 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
       try {
         passportPath = await uploadDoc(passportFile, 'passport')
         syndicatePath = await uploadDoc(syndicateFile, 'syndicate')
+        var syndicateBackPath = await uploadDoc(syndicateBackFile, 'syndicate_back')
       } catch (upErr) {
         // Make the error IMPOSSIBLE to miss
         alert('⚠️ DOCUMENT UPLOAD FAILED:\n\n' + upErr.message + '\n\nThis is usually a Storage permissions issue. Registration stopped.')
@@ -271,12 +280,12 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
         await supabase.from('documents').insert([
           { doctor_id: doctorId, document_type: 'passport', file_url: passportPath },
           { doctor_id: doctorId, document_type: 'syndicate', file_url: syndicatePath },
+          { doctor_id: doctorId, document_type: 'syndicate_back', file_url: syndicateBackPath },
         ])
       }
 
       setDone(true)
       notifyRegistration(f.email, f.fullName.trim())
-      setTimeout(onSuccess, 2000)
     } catch (err) {
       setError('Unexpected error: ' + err.message)
     } finally {
@@ -289,9 +298,21 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
       <div className="auth-screen">
         <div className="auth-card center">
           <img src="/logo.png" alt="" className="auth-logo" />
-          <div style={{ fontSize: '3rem', margin: '1rem 0' }}>✅</div>
-          <h2 className="auth-title">Registration Complete</h2>
-          <p className="auth-sub">Your application has been submitted. The administration will review your documents and notify you upon approval.</p>
+          <div style={{ fontSize: '3rem', margin: '1rem 0' }}>📧</div>
+          <h2 className="auth-title">Check Your Email</h2>
+          <p className="auth-sub">
+            We've sent a confirmation link to <strong>{f.email}</strong>.
+          </p>
+          <div style={{ background: '#EBF4F8', border: '1px solid var(--teal)', borderRadius: 10, padding: '1rem', margin: '1rem 0', textAlign: 'left' }}>
+            <p style={{ fontSize: '.9rem', color: 'var(--navy)', marginBottom: '.5rem' }}><strong>Next steps:</strong></p>
+            <p style={{ fontSize: '.88rem', color: '#333', marginBottom: '.4rem' }}>1️⃣ Open the email and click the confirmation link.</p>
+            <p style={{ fontSize: '.88rem', color: '#333', marginBottom: '.4rem' }}>2️⃣ Your account will be activated.</p>
+            <p style={{ fontSize: '.88rem', color: '#333' }}>3️⃣ The administration will review your documents and approve your membership.</p>
+          </div>
+          <p className="muted" style={{ fontSize: '.82rem' }}>
+            Didn't receive it? Check your spam folder. The email is from contact@fertility-global.org.
+          </p>
+          {onBack && <button className="auth-back" onClick={onBack} style={{ marginTop: '1rem' }}>← Back to main website</button>}
         </div>
       </div>
     )
@@ -410,11 +431,11 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
               </label>
             </div>
 
-            {/* Syndicate */}
+            {/* Syndicate Front */}
             <div className={`doc-upload-box ${syndicateFile ? 'doc-upload-box--done' : ''}`}>
               <div className="doc-upload-icon">🏥</div>
               <div className="doc-upload-info">
-                <strong>Syndicate / Union Card *</strong>
+                <strong>Syndicate Card — Front *</strong>
                 <p className="muted" style={{ fontSize: '.82rem' }}>
                   {syndicateFile ? `✅ ${syndicateFile.name} (${Math.round(syndicateFile.size/1024)}KB)` : 'JPG, PNG or PDF — max 15MB'}
                 </p>
@@ -425,16 +446,32 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
                   onChange={e => setSyndicateFile(e.target.files[0])} />
               </label>
             </div>
+
+            {/* Syndicate Back */}
+            <div className={`doc-upload-box ${syndicateBackFile ? 'doc-upload-box--done' : ''}`}>
+              <div className="doc-upload-icon">🔄</div>
+              <div className="doc-upload-info">
+                <strong>Syndicate Card — Back *</strong>
+                <p className="muted" style={{ fontSize: '.82rem' }}>
+                  {syndicateBackFile ? `✅ ${syndicateBackFile.name} (${Math.round(syndicateBackFile.size/1024)}KB)` : 'JPG, PNG or PDF — max 15MB'}
+                </p>
+              </div>
+              <label className="doc-upload-btn" style={{ cursor: 'pointer' }}>
+                {syndicateBackFile ? '🔄 Change' : '⬆ Upload'}
+                <input type="file" accept=".jpg,.jpeg,.png,.pdf" style={{ display: 'none' }}
+                  onChange={e => setSyndicateBackFile(e.target.files[0])} />
+              </label>
+            </div>
             <p className="muted" style={{ fontSize: '.8rem', marginTop: '-.4rem', marginBottom: '.6rem', color: '#856404' }}>
               📌 Note: The uploaded card must clearly show all details and information (name, ID number, issue/expiry, and issuing body).
             </p>
 
-            {!passportFile || !syndicateFile ? (
+            {!passportFile || !syndicateFile || !syndicateBackFile ? (
               <div className="auth-error" style={{ background: '#fff3cd', border: '1px solid #ffc107', color: '#856404' }}>
-                ⚠️ Both documents are required to submit your application.
+                ⚠️ All three documents are required to submit your application.
               </div>
             ) : (
-              <div className="auth-ok">✅ Both documents uploaded — ready to submit</div>
+              <div className="auth-ok">✅ All documents uploaded — ready to submit</div>
             )}
 
             {error && <div className="auth-error">{error}</div>}

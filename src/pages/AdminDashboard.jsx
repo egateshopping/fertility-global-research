@@ -153,9 +153,9 @@ export default function AdminDashboard() {
   // ---------- doctor edit/delete ----------
   const saveDoctor = async (e) => {
     e.preventDefault()
-    const { id, full_name, specialty, hospital, nationality, passport_number, years_of_experience, email, syndicate_id, city, governorate } = editDoctor
+    const { id, full_name, specialty, hospital, affiliation, phone, nationality, passport_number, years_of_experience, email, syndicate_id, city, governorate } = editDoctor
     const { error } = await supabase.from('doctors').update({
-      full_name, specialty, hospital, nationality, passport_number,
+      full_name, specialty, hospital, affiliation, phone, nationality, passport_number,
       syndicate_id, city, governorate,
       years_of_experience: years_of_experience ? parseInt(years_of_experience) : null, email
     }).eq('id', id)

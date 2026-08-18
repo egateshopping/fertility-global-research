@@ -6,6 +6,20 @@ import { generateCertificatePDF } from '../utils/certificateGenerator'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import { useLang } from '../i18n.jsx'
+import { isPlaceholderName } from '../utils/displayName.js'
+
+// Renders a member's name, or a clear warning when the stored name is only the
+// email-prefix placeholder (the real name was never saved during registration).
+function NameCell({ d }) {
+  if (!isPlaceholderName(d)) return <strong>{d.full_name}</strong>
+  return (
+    <span>
+      <span style={{ color: '#b45309', fontWeight: 700, fontSize: '.85rem' }}>⚠️ الاسم غير مسجّل</span>
+      <br />
+      <span className="muted" style={{ fontSize: '.78rem' }}>{d.email}</span>
+    </span>
+  )
+}
 
 export default function AdminDashboard() {
   const { t } = useLang()
@@ -635,7 +649,7 @@ export default function AdminDashboard() {
               <tbody>
                 {filteredDoctors.map(d => (
                   <tr key={d.id}>
-                    <td>{d.full_name}</td><td>{d.specialty}</td><td>{d.nationality}</td><td>{d.passport_number}</td>
+                    <td><NameCell d={d} /></td><td>{d.specialty || '—'}</td><td>{d.nationality || '—'}</td><td>{d.passport_number || '—'}</td>
                     <td className="row-actions">
                       <button className="mini" style={{background:'#eef',color:'#0B2E5C'}} onClick={() => setDetailsDoctor(d)}>👁 التفاصيل</button>
                       <button className="mini" onClick={() => openDoctorFiles(d)}>{t('admin_files')}</button>
@@ -880,7 +894,7 @@ export default function AdminDashboard() {
               <tbody>
                 {pendingDoctors.map(d => (
                   <tr key={d.id}>
-                    <td>{d.full_name}</td><td>{d.specialty}</td><td>{d.nationality}</td><td>{d.email}</td>
+                    <td><NameCell d={d} /></td><td>{d.specialty || '—'}</td><td>{d.nationality || '—'}</td><td>{d.email}</td>
                     <td className="row-actions">
                       <button className="mini" style={{background:'#eef',color:'#0B2E5C'}} onClick={() => setDetailsDoctor(d)}>👁 التفاصيل</button>
                       <button className="mini" style={{background:'#e8f4ff',color:'#0B2E5C'}} onClick={() => openDoctorFiles(d)}>📁 {t('admin_files')}</button>

@@ -11,15 +11,14 @@ export default function CertVerifyPage({ certNumber }) {
   }, [certNumber])
 
   const fetchCert = async () => {
-    const { data: cert } = await supabase
-      .from('certificate_requests')
-      .select('*, doctors(*)')
-      .eq('cert_number', certNumber)
-      .eq('status', 'approved')
-      .single()
+    // Verification runs through a database function so that this page works for
+    // anonymous visitors scanning the QR code, while the underlying tables stay
+    // closed. The function returns only what a verifier needs.
+    const { data: rows, error } = await supabase
+      .rpc('verify_certificate', { p_number: certNumber })
 
-    if (!cert) { setNotFound(true); setLoading(false); return }
-    setData(cert)
+    if (error || !rows || rows.length === 0) { setNotFound(true); setLoading(false); return }
+    setData(rows[0])
     setLoading(false)
   }
 
@@ -38,7 +37,6 @@ export default function CertVerifyPage({ certNumber }) {
     </div>
   )
 
-  const doc = data.doctors
 
   return (
     <div style={{ maxWidth: 620, margin: '2rem auto', padding: '1rem' }}>
@@ -68,7 +66,8 @@ export default function CertVerifyPage({ certNumber }) {
           {[
             ['Certificate No.', data.cert_number],
             ['Issue Date', data.issued_date],
-            ['Status', '✅ Active Member'],
+            ['Valid Until', data.valid_until],
+            ['Status', data.is_valid ? '✅ Active Member' : '⚠️ Expired — renewal required'],
           ].map(([label, value]) => (
             <div key={label} className="profile-field">
               <span className="profile-label">{label}</span>
@@ -85,10 +84,9 @@ export default function CertVerifyPage({ certNumber }) {
         </h3>
         <div className="profile-grid">
           {[
-            ['Full Name', `Dr. ${(doc?.full_name || '').trim()}`],
-            ['Specialty', doc?.specialty || '—'],
-            ['Hospital', doc?.hospital || '—'],
-            ['Nationality', doc?.nationality || '—'],
+            ['Full Name', `Dr. ${(data.holder_name || '').trim()}`],
+            ['Specialty', data.specialty || '—'],
+            ['Affiliation', data.affiliation || '—'],
           ].map(([label, value]) => (
             <div key={label} className="profile-field">
               <span className="profile-label">{label}</span>

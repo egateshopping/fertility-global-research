@@ -3,6 +3,8 @@ import { supabase } from '../supabaseClient'
 import { generateInvitationPDF } from '../utils/pdfGenerator'
 import CertificateRequest from './CertificateRequest'
 import { generateCertificatePDF } from '../utils/certificateGenerator'
+import { isPlaceholderName } from '../utils/displayName.js'
+import { COUNTRIES } from '../countries'
 
 const BUCKET = 'doctor-documents'
 
@@ -195,7 +197,12 @@ export default function DoctorDashboard({ doctor }) {
     const finalSizeKB = Math.round(compressed.size / 1024)
 
     const ext = compressed.name.split('.').pop()
-    const filePath = `${doctor.id}/${docType}.${ext}`
+    // The storage policy scopes a member to a folder named after their auth
+    // user id, not their doctors row id — using the row id is denied.
+    const { data: authData } = await supabase.auth.getUser()
+    const uid = authData?.user?.id
+    if (!uid) { setUploadError('Session expired — please sign in again.'); setUploading(null); return }
+    const filePath = `${uid}/${docType}.${ext}`
 
     const { error: storageErr } = await supabase.storage
       .from(BUCKET).upload(filePath, compressed, { upsert: true })
@@ -223,8 +230,13 @@ export default function DoctorDashboard({ doctor }) {
     }
   }
 
-  const getDocUrl = (filePath) =>
-    supabase.storage.from(BUCKET).getPublicUrl(filePath).data.publicUrl
+  // The bucket is private, so a public URL returns an error — a short-lived
+  // signed URL is the only way to display a stored document.
+  const openDoc = async (filePath) => {
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(filePath, 3600)
+    if (error || !data?.signedUrl) { setUploadError('Could not open file: ' + (error?.message || 'unknown error')); return }
+    window.open(data.signedUrl, '_blank')
+  }
 
   // ─── Download invitation ──────────────────────────────────────────────────
   const downloadInvitation = async (invitation) => {
@@ -241,9 +253,12 @@ export default function DoctorDashboard({ doctor }) {
 
     if (activityImg) {
       const ext = activityImg.name.split('.').pop()
-      const path = `activities/${doctor.id}/${Date.now()}.${ext}`
+      const { data: authData } = await supabase.auth.getUser()
+      const uid = authData?.user?.id
+      // Same folder rule as documents: the first segment must be the auth uid.
+      const path = `${uid}/activities/${Date.now()}.${ext}`
       const { error } = await supabase.storage.from(BUCKET).upload(path, activityImg, { upsert: true })
-      if (!error) image_url = getDocUrl(path)
+      if (!error) image_url = path   // stored as a path; signed on demand when displayed
     }
 
     await supabase.from('member_activities').insert([{
@@ -263,8 +278,128 @@ export default function DoctorDashboard({ doctor }) {
 
   const p = doctor || {}
 
+  // ── Profile completion ────────────────────────────────────────────────────
+  // Accounts created before the profile write was fixed have a name taken from
+  // the email prefix and empty professional fields. The member fills them here;
+  // row-level security limits the update to their own row and the database
+  // guard prevents any change to status / visible / is_admin.
+  const missing = !p.specialty || !p.hospital || !p.passport_number ||
+                  !p.nationality || !p.city || isPlaceholderName(p)
+  const [showComplete, setShowComplete] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileMsg, setProfileMsg] = useState('')
+  const [cf, setCf] = useState({
+    full_name: isPlaceholderName(p) ? '' : (p.full_name || ''),
+    specialty: p.specialty || '', hospital: p.hospital || '',
+    affiliation: p.affiliation || '', phone: p.phone || '',
+    passport_number: p.passport_number || '', syndicate_id: p.syndicate_id || '',
+    nationality: p.nationality || '', city: p.city || '',
+    governorate: p.governorate || '', date_of_birth: p.date_of_birth || '',
+    syndicate_join_date: p.syndicate_join_date || '', address: p.address || ''
+  })
+
+  const saveProfile = async (e) => {
+    e.preventDefault()
+    setProfileMsg('')
+    const required = [['full_name', 'Full name'], ['specialty', 'Specialty'],
+                      ['hospital', 'Workplace'], ['passport_number', 'Passport number'],
+                      ['nationality', 'Nationality'], ['city', 'City']]
+    for (const [key, label] of required) {
+      if (!String(cf[key] || '').trim()) { setProfileMsg(`⚠️ ${label} is required`); return }
+    }
+    setSavingProfile(true)
+    const payload = Object.fromEntries(
+      Object.entries(cf).map(([k, v]) => [k, String(v).trim() === '' ? null : v])
+    )
+    payload.full_name = String(cf.full_name).trim()
+    const { data, error } = await supabase
+      .from('doctors').update(payload).eq('id', p.id).select('id')
+    setSavingProfile(false)
+    if (error) { setProfileMsg('❌ Save failed: ' + error.message); return }
+    if (!data || data.length === 0) { setProfileMsg('❌ Save failed: profile row not found.'); return }
+    setProfileMsg('✅ Saved. The administration will review your membership.')
+    setTimeout(() => window.location.reload(), 1500)
+  }
+
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+      {/* ── Complete your profile ── */}
+      {missing && (
+        <div className="panel" style={{ borderTop: '4px solid #d97706' }}>
+          <h2 style={{ fontFamily: 'Cairo', color: '#b45309', marginBottom: '.6rem', fontSize: '1.3rem' }}>
+            ⚠️ أكمل ملفك الشخصي — Complete Your Profile
+          </h2>
+          <p className="muted" style={{ fontSize: '.9rem', marginBottom: '1rem' }}>
+            بياناتك المهنية غير مسجّلة في النظام. أكملها هنا ليتمكن مجلس الجمعية من مراجعة عضويتك.
+            <br />
+            Your professional details are not on record. Please complete them so the association can review your membership.
+          </p>
+
+          {!showComplete ? (
+            <button className="btn-primary" onClick={() => setShowComplete(true)}>
+              ✏️ إكمال البيانات / Complete now
+            </button>
+          ) : (
+            <div>
+              <div className="profile-grid">
+                {[
+                  ['full_name', 'Full name (as in passport) *', 'text'],
+                  ['specialty', 'Specialty *', 'text'],
+                  ['hospital', 'Workplace / Hospital *', 'text'],
+                  ['passport_number', 'Passport number *', 'text'],
+                  ['city', 'City *', 'text'],
+                  ['syndicate_id', 'Syndicate / Work ID', 'text'],
+                  ['governorate', 'Governorate', 'text'],
+                  ['phone', 'Phone', 'tel'],
+                  ['affiliation', 'Affiliation', 'text'],
+                  ['address', 'Address', 'text'],
+                  ['date_of_birth', 'Date of birth', 'date'],
+                  ['syndicate_join_date', 'Syndicate join date', 'date'],
+                ].map(([key, label, type]) => (
+                  <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
+                    <label className="profile-label">{label}</label>
+                    <input
+                      className="auth-input" type={type}
+                      value={cf[key] || ''}
+                      onChange={e => setCf({ ...cf, [key]: e.target.value })}
+                    />
+                  </div>
+                ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
+                  <label className="profile-label">Nationality *</label>
+                  <select
+                    className="auth-input" value={cf.nationality || ''}
+                    onChange={e => setCf({ ...cf, nationality: e.target.value })}
+                  >
+                    <option value="">—</option>
+                    {COUNTRIES.map(c => (
+                      <option key={c.code} value={c.en}>{c.flag} {c.en}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {profileMsg && (
+                <p style={{ marginTop: '1rem', fontSize: '.9rem', fontWeight: 600 }}>{profileMsg}</p>
+              )}
+
+              <div style={{ display: 'flex', gap: '.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                <button className="btn-primary" onClick={saveProfile} disabled={savingProfile}>
+                  {savingProfile ? 'جارٍ الحفظ…' : '💾 حفظ / Save'}
+                </button>
+                <button className="btn-soft" onClick={() => setShowComplete(false)} disabled={savingProfile}>
+                  إلغاء / Cancel
+                </button>
+              </div>
+              <p className="muted" style={{ fontSize: '.8rem', marginTop: '.8rem' }}>
+                لا يمكنك تغيير حالة العضوية بنفسك — الاعتماد من إدارة الجمعية فقط.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Profile Card ── */}
       <div className="panel">
@@ -319,7 +454,7 @@ export default function DoctorDashboard({ doctor }) {
                 <div className="doc-info">
                   <span className="doc-label">{label}</span>
                   {uploaded
-                    ? <a href={getDocUrl(uploaded.file_url)} target="_blank" rel="noopener noreferrer" className="doc-view">View ↗</a>
+                    ? <button className="doc-view" onClick={() => openDoc(uploaded.file_url)}>View ↗</button>
                     : <span className="doc-missing">Not uploaded</span>
                   }
                 </div>

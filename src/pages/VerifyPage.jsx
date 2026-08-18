@@ -11,14 +11,14 @@ export default function VerifyPage({ invNumber }) {
   }, [invNumber])
 
   const fetchInvitation = async () => {
-    const { data: inv } = await supabase
-      .from('invitations')
-      .select('*, doctors(*), conferences(*)')
-      .eq('invitation_number', invNumber)
-      .single()
+    // Runs through a database function so anonymous verifiers can scan the QR
+    // code without the invitations table being readable. The passport number
+    // comes back masked to its last four characters.
+    const { data: rows, error } = await supabase
+      .rpc('verify_invitation', { p_number: invNumber })
 
-    if (!inv) { setNotFound(true); setLoading(false); return }
-    setData(inv)
+    if (error || !rows || rows.length === 0) { setNotFound(true); setLoading(false); return }
+    setData(rows[0])
     setLoading(false)
   }
 
@@ -36,9 +36,6 @@ export default function VerifyPage({ invNumber }) {
       <p style={{ color: 'var(--muted)', marginTop: '.5rem' }}>This may be invalid or expired.</p>
     </div>
   )
-
-  const doc = data.doctors
-  const conf = data.conferences
 
   return (
     <div style={{ maxWidth: 640, margin: '2rem auto' }}>
@@ -86,11 +83,11 @@ export default function VerifyPage({ invNumber }) {
         </h3>
         <div className="profile-grid">
           {[
-            ['Full Name', `Dr. ${doc?.full_name || '—'}`],
-            ['Specialty', doc?.specialty || '—'],
-            ['Hospital', doc?.hospital || '—'],
-            ['Nationality', doc?.nationality || '—'],
-            ['Passport No.', doc?.passport_number || '—'],
+            ['Full Name', `Dr. ${data.holder_name || '—'}`],
+            ['Specialty', data.specialty || '—'],
+            ['Hospital', data.hospital || '—'],
+            ['Nationality', data.nationality || '—'],
+            ['Passport No.', data.passport_masked || '—'],
           ].map(([label, value]) => (
             <div key={label} className="profile-field">
               <span className="profile-label">{label}</span>
@@ -107,10 +104,10 @@ export default function VerifyPage({ invNumber }) {
         </h3>
         <div className="profile-grid">
           {[
-            ['Conference', conf?.title || '—'],
-            ['Location', conf?.location || '—'],
-            ['Start Date', conf?.start_date || '—'],
-            ['End Date', conf?.end_date || '—'],
+            ['Conference', data.conference_title || '—'],
+            ['Location', data.conference_location || '—'],
+            ['Start Date', data.start_date || '—'],
+            ['End Date', data.end_date || '—'],
           ].map(([label, value]) => (
             <div key={label} className="profile-field">
               <span className="profile-label">{label}</span>

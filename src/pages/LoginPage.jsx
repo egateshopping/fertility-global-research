@@ -207,7 +207,14 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
 
     try {
       // 1) Create auth account
-      const { data, error: authErr } = await supabase.auth.signUp({ email: f.email, password: f.password })
+      // full_name is passed as user metadata so the database signup trigger
+      // writes the real name immediately, instead of falling back to the
+      // email prefix if the profile write below fails.
+      const { data, error: authErr } = await supabase.auth.signUp({
+        email: f.email,
+        password: f.password,
+        options: { data: { full_name: f.fullName.trim() } }
+      })
       if (authErr) {
         // If email already registered, give a clear message
         if (authErr.message.toLowerCase().includes('already') || authErr.message.toLowerCase().includes('registered')) {
@@ -247,9 +254,10 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
         return
       }
 
-      // 3) Insert doctor record (only after successful upload)
-      const { error: pErr } = await supabase.from('doctors').insert([{
-        user_id: userId,
+      // 3) Fill in the profile row. The database signup trigger already created
+      //    the row, so this is an UPDATE on the member's own row — an INSERT
+      //    here is rejected by row-level security and loses the whole form.
+      const profile = {
         full_name: f.fullName.trim(),
         email: f.email,
         profession: f.profession,
@@ -266,11 +274,30 @@ export function RegisterPage({ onSuccess, onSwitchPage, onBack }) {
         date_of_birth: f.dateOfBirth || null,
         syndicate_join_date: f.syndicateJoinDate || null,
         address: f.address || null,
-        fertility_specialist: f.fertilitySpecialist,
-        status: 'pending',
-        is_admin: false
-      }])
-      if (pErr) { setError('Profile save failed: ' + pErr.message); setLoading(false); return }
+        fertility_specialist: f.fertilitySpecialist
+        // status / visible / is_admin are set by the administration only and are
+        // deliberately not sent from the browser.
+      }
+
+      let { error: pErr, data: updated } = await supabase
+        .from('doctors').update(profile).eq('user_id', userId).select('id')
+
+      // If the trigger row is not visible yet, wait briefly and retry once.
+      if (!pErr && (!updated || updated.length === 0)) {
+        await new Promise(r => setTimeout(r, 1200))
+        const retry = await supabase
+          .from('doctors').update(profile).eq('user_id', userId).select('id')
+        pErr = retry.error
+        updated = retry.data
+      }
+
+      if (pErr || !updated || updated.length === 0) {
+        alert('⚠️ PROFILE SAVE FAILED\n\n' + (pErr?.message || 'The profile row was not found.') +
+              '\n\nYour documents were uploaded but your details were NOT saved. Please contact contact@fertility-global.org before signing in.')
+        setError('Profile save failed: ' + (pErr?.message || 'profile row not found'))
+        setLoading(false)
+        return
+      }
 
       // 4) Get doctor id and save document records
       const { data: docData } = await supabase.from('doctors').select('id').eq('user_id', userId).single()

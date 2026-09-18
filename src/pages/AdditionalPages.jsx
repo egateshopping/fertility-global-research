@@ -11,7 +11,10 @@ export function DoctorDirectory({ profession = 'doctor' }) {
   useEffect(() => { fetchPeople() }, [profession])
 
   const fetchPeople = async () => {
-    let query = supabase.from('doctors').select('*')
+    // Only the columns this directory displays. Requesting '*' would pull
+    // passport numbers, dates of birth, phones, addresses and e-mails into a
+    // page that any anonymous visitor can read.
+    let query = supabase.from('doctors').select('id, full_name, profession, specialty, hospital, affiliation, nationality, city, governorate, fertility_specialist, profile_photo_url')
     query = query.eq('status', 'approved').eq('visible', true)
     const { data } = await query
     // filter by profession (older records may have null profession => treat as doctor)

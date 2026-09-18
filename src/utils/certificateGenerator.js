@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf'
+import { membershipExpiry, formatExpiry } from './membershipValidity.js'
 
 const loadImage = (url, maxW = 300, quality = 0.85) =>
   new Promise((resolve) => {
@@ -154,11 +155,15 @@ export const generateCertificatePDF = async (doctor, certNumber, issueDate) => {
   pdf.setFontSize(12)
   pdf.setTextColor(...black)
 
-  const year = issueDate ? issueDate.split('-')[0] : String(new Date().getFullYear())
+  // Membership runs for one year from the member's joining date and is renewed
+  // on each anniversary. The same rule is applied by the verify_certificate
+  // function in the database, so the printed date and the QR result always
+  // agree — see src/utils/membershipValidity.js.
+  const expiryText = formatExpiry(membershipExpiry(doctor, issueDate))
 
-  pdf.text(`is an active member of Global Fertility Research for the year ${year},`, W / 2, 103, { align: 'center' })
+  pdf.text(`is an active member of Global Fertility Research,`, W / 2, 103, { align: 'center' })
   pdf.text(`and has agreed to abide by the Association's constitution and code of practice.`, W / 2, 111, { align: 'center' })
-  pdf.text(`This membership is valid until 31 December ${year}.`, W / 2, 121, { align: 'center' })
+  pdf.text(`This membership is valid until ${expiryText}.`, W / 2, 121, { align: 'center' })
 
   // Specialty + Affiliation lines (separated)
   let detailY = 131

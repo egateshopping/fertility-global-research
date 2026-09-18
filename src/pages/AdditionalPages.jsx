@@ -7,17 +7,28 @@ export function DoctorDirectory({ profession = 'doctor' }) {
   const [people, setPeople] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [specialtyFilter, setSpecialtyFilter] = useState('')
+  const [isMember, setIsMember] = useState(false)
 
   useEffect(() => { fetchPeople() }, [profession])
 
   const fetchPeople = async () => {
-    // Only the columns this directory displays. Requesting '*' would pull
-    // passport numbers, dates of birth, phones, addresses and e-mails into a
-    // page that any anonymous visitor can read.
-    let query = supabase.from('doctors').select('id, full_name, profession, specialty, hospital, affiliation, nationality, city, governorate, fertility_specialist, profile_photo_url')
-    query = query.eq('status', 'approved').eq('visible', true)
-    const { data } = await query
-    // filter by profession (older records may have null profession => treat as doctor)
+    // Visitors who are not signed in see a professional listing only: name,
+    // profession and specialty. Signed-in members see the full record.
+    const { data: sess } = await supabase.auth.getSession()
+    const signedIn = Boolean(sess?.session)
+    setIsMember(signedIn)
+
+    const columns = signedIn
+      ? 'id, full_name, profession, specialty, hospital, affiliation, nationality, city, governorate, fertility_specialist, profile_photo_url'
+      : 'id, full_name, profession, specialty'
+
+    const { data, error } = await supabase
+      .from('doctors')
+      .select(columns)
+      .eq('status', 'approved')
+      .eq('visible', true)
+
+    if (error) { setPeople([]); return }
     const list = (data || []).filter(d => (d.profession || 'doctor') === profession)
     setPeople(list)
   }
@@ -44,13 +55,19 @@ export function DoctorDirectory({ profession = 'doctor' }) {
         </select>
       </div>
 
+      {!isMember && (
+        <p className="muted" style={{ marginBottom: '1rem', fontSize: '.9rem' }}>
+          سجّل الدخول لعرض بيانات الأعضاء كاملة · Sign in to see full member details
+        </p>
+      )}
+
       <div className="card-grid">
         {filtered.map(d => (
           <div className="event-card" key={d.id}>
             <h3>{d.full_name}</h3>
-            <p className="muted">{d.specialty}</p>
-            <p className="muted">🏥 {d.hospital}</p>
-            <p className="muted">🌍 {d.nationality}</p>
+            {d.specialty && <p className="muted">{d.specialty}</p>}
+            {d.hospital && <p className="muted">🏥 {d.hospital}</p>}
+            {d.nationality && <p className="muted">🌍 {d.nationality}</p>}
             {(d.city || d.governorate) && (
               <p className="muted">📍 {[d.city, d.governorate].filter(Boolean).join(', ')}</p>
             )}
